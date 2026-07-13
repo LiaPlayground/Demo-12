@@ -84,7 +84,7 @@ Generated in sequence without interruption inside `journal.md`:
 Run each step silently (no approval prompts between steps):
 
 1. If `journal.md` does not exist, instantiate it from `templates/journal.md`: copy the template **1:1, byte for byte** — no edits, no added comments. The file is already a valid LiaScript document; its first HTML comment is the LiaScript metadata header (`@style`, imports) and must remain the first comment.
-2. Replace the content of `journal.md` → `## Course Context` from collected inputs — **flat** `* __Label:__` bullets only, no sub-headings (rule applies to all sections below as well).
+2. Replace the content of `journal.md` → `## Course Context` from collected inputs — **flat** `* __Label:__` bullets only, no sub-headings (rule applies to all sections below as well). Set `__File Structure:__` from the course type default in `data/file-structure-modes.md` (single-lesson → single-file, all others → multi-file) and mention the default in the Phase 3 completion summary so the instructor can override it.
 3. Replace the content of `journal.md` → `## Outline`.
 4. Replace the content of `journal.md` → `## Didactics` — including the **Persona Voice Sample** bullet.
 5. If template imports were provided, run `tasks/manage-templates.md` and update `journal.md` → `## Templates`.
@@ -117,7 +117,7 @@ After each section is saved, print a brief progress line:
 > The journal's `## Dashboard` section is maintained exclusively by `tasks/update-dashboard.md` (already run in Phase 2, step 9).
 
 7. Print completion summary:
-   > "Scaffold completed. `journal.md` updated with [N] sections/entries."
+   > "Scaffold completed. `journal.md` updated with [N] sections/entries. File Structure: [single-file | multi-file] (default for {course type} — see `data/file-structure-modes.md`; let me know if you'd prefer the other approach)."
    >
    > | Section      | Status            |
    > |--------------|-------------------|

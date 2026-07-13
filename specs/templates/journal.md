@@ -194,6 +194,10 @@ _Filled by `:init-course` from `templates/course-context.yaml`._
   3. Pacing: {{scheduled | learner-driven | event-based}}
   4. Assessment defaults: {{quizzes | reflection | assignments | none}}
 
+* __File Structure:__
+  1. Mode: {{single-file | multi-file}} — see `data/file-structure-modes.md`
+  2. Session folder naming: {{n/a for single-file | `{number}-{slug}`}}
+
 * __Conventions & Standards:__
   1. Language: {{de | en | other}}
   2. Tone: {{formal | informal | conversational}}
@@ -342,7 +346,7 @@ _Filled by `:create-agenda` from `templates/course-agenda.yaml` (skip if the cou
 
   | # | Title | Type | Duration | Learning Objective | Material |
   |---|-------|------|----------|--------------------|----------|
-  | 1 | {{title}} | {{lecture | exercise | ...}} | {{duration}} | {{objective}} | materials/1-{{type}}.md |
+  | 1 | {{title}} | {{lecture | exercise | ...}} | {{duration}} | {{objective}} | {{material path — resolved from `## Course Context` → `__File Structure:__`; see `data/file-structure-modes.md`}} |
 
 ---
 

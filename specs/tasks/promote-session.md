@@ -15,10 +15,12 @@ Converts a **Session** into a detailed **Session Material**.
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
 - Style, difficulty level, and didactic concept from `journal.md` → `## Didactics`
 - Terminology from `journal.md` → `## Course Context`
+- File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
 
 ## Output
 
-- `materials/{number}-{type}.md`
+- **multi-file mode:** `materials/{number}-{slug}/README.md` (new folder; `{slug}` derived once from the session title — see `data/file-structure-modes.md`)
+- **single-file mode:** the `##` chapter matching this session, inserted/replaced in session-number order inside root `/README.md`
 - Structure based on `templates/session-material.yaml`
 
 ## Steps
@@ -34,7 +36,9 @@ Converts a **Session** into a detailed **Session Material**.
 6. Consider didactic inputs.
 7. Generate planned outline.
 8. Apply template.
-9. If the material uses macros from `journal.md` → `## Templates`, include each required `import: {url}` line in the LiaScript metadata header of `materials/{number}-{type}.md`.
-10. Save the material file as `materials/{number}-{type}.md`.
+9. If the material uses macros from `journal.md` → `## Templates`, include each required `import: {url}` line in the LiaScript metadata header (multi-file: the new file's own header; single-file: the shared root `README.md` header, if not already present).
+10. Resolve the File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`) and save accordingly:
+    - **multi-file:** derive `{slug}` from the session title, create `materials/{number}-{slug}/README.md` (and its `assets/` subfolder on demand, not upfront).
+    - **single-file:** insert or replace the `##` chapter for this session inside root `/README.md`, keeping chapters in session-number order.
 11. Update the overview table in `journal.md` → `## Sessions`: set Material column to ✅ for session `{number}`.
 12. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.

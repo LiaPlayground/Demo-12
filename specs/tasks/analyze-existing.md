@@ -23,6 +23,8 @@ Offers two paths for each missing core section:
 ## Steps
 
 1. Load `journal.md` → `## Course Context` for course type, terminology, and conventions.
+   - If `__File Structure:__` is missing (older projects predate this field), detect it from disk (see `data/file-structure-modes.md`): a `materials/*/README.md` layout → `multi-file`; a single root `README.md` with multiple `##` chapters and no `materials/` folder → `single-file`. Add the detected mode to `## Course Context` and state it to the instructor for confirmation.
+   - If `materials/` exists but uses a folder-naming pattern other than `{number}-{slug}` (e.g. legacy `{number}-{type}` folders), note this as an improvement opportunity in step 7 rather than silently renaming existing folders.
 
 2. Scan the project root and relevant folders:
 
@@ -35,7 +37,9 @@ Offers two paths for each missing core section:
    | `journal.md` → `## Templates` | optional; required if template imports or macros are used |
    | `journal.md` → `## Sessions` | if sessions expected |
    | `journal.md` → `## Agents` | always; contains the Coauthor role, optional specialist customizations, and learner personas |
-   | `materials/`   | if sessions expected         |
+   | `journal.md` → `## Course Context` → `__File Structure:__` | always; detect from disk if missing (see step 1) |
+   | `materials/`   | if sessions expected and File Structure mode = multi-file |
+   | root `README.md` `##` chapters | if File Structure mode = single-file |
 
 3. Display a **Course Memory Status** table:
    - ✅ exists
@@ -74,6 +78,7 @@ Offers two paths for each missing core section:
 7. After all missing sections are handled, list **improvement opportunities** in the existing content:
    - Sessions without materials
    - Materials without session subsections
+   - Session folders whose naming doesn't match the `{number}-{slug}` convention (see `data/file-structure-modes.md`) — flag for the instructor to decide whether to rename or leave as legacy
    - Inconsistent terminology or persona style
    - Template macros used without matching `import:` metadata or `## Templates` documentation
    - Missing references or learning objectives

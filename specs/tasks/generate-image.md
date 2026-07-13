@@ -14,13 +14,13 @@ Requires the **chrome-devtools MCP server** to be active and Chrome running with
 ## Inputs
 
 - **Single mode:** the `<section>` whose heading is `#### {slug}`, found in any session's `#### Images` block in `journal.md` → `## Sessions`
-- **Batch mode:** all `<section>` image entries across every session's `#### Images` block (skips entries whose `__Status:__` is `generated` or whose `assets/images/{slug}.png` already exists)
+- **Batch mode:** all `<section>` image entries across every session's `#### Images` block (skips entries whose `__Status:__` is `generated` or whose file at `__Datei:__` already exists)
 - Chrome DevTools MCP availability (checked at task start)
 - Course language from `journal.md` → `## Course Context` (safety-net: appended to prompt if no language instruction is already present)
 
 ## Output
 
-- Downloaded images saved to `assets/images/{slug}.png` (or fallback path)
+- Downloaded images saved to the exact path already recorded in that entry's `__Datei:__` field (written by `:create-image`, mode-resolved per `data/file-structure-modes.md` — do not re-derive independently)
 - Confirmation per image; batch summary at the end
 
 ## MCP Setup (required)
@@ -70,15 +70,15 @@ The `chrome-devtools` MCP server must be configured in VS Code's `mcp.json`.
 ## Phase 2b: Batch Mode — Collect Queue
 
 3. Scan every session's `#### Images` block in `journal.md` → `## Sessions` for `<section>` image entries.
-4. Read the slug per entry from its `#### {slug}` heading.
+4. Read the slug and target path per entry from its `#### {image-slug}` heading and `__Datei:__` field.
 5. Skip if already generated:
-   - `__Status:__` is `generated`, **or** `assets/images/{slug}.png` already exists → mark `⏭ skipped`
-   - otherwise (`__Status:__ prompt-ready` and no PNG) → add to queue
+   - `__Status:__` is `generated`, **or** the file at `__Datei:__` already exists → mark `⏭ skipped`
+   - otherwise (`__Status:__ prompt-ready` and no file yet) → add to queue
 6. Print queue:
    ```
    Batch queue: {N} to process, {M} skipped (already done)
-   - fox-samurai  → assets/images/fox-samurai.png
-   - whale-astronaut → assets/images/whale-astronaut.png
+   - fox-samurai  → {__Datei:__ path from that entry}
+   - whale-astronaut → {__Datei:__ path from that entry}
    ```
 7. 🎛️ Confirm: **Start / Cancel**
 
@@ -248,12 +248,9 @@ After each image: log result (`✅ done` / `❌ failed`), continue to next.
 
 ## Phase 5: Download and Save *(single + sequential batch)*
 
-- Determine save path:
-  - `assets/images/` exists → `assets/images/{slug}.png`
-  - `assets/` exists → `assets/{slug}.png`
-  - Neither → `~/Downloads/{slug}.png` (inform instructor)
+- Save path: use the exact path already recorded in this entry's `__Datei:__` field (written by `:create-image`, already resolved for the active File Structure mode — see `data/file-structure-modes.md`). Create the containing folder if it does not exist yet. Only fall back to `~/Downloads/{image-slug}.png` if `__Datei:__` is missing entirely (inform the instructor).
 - Collect new `file_` URLs via `urlsBefore` diff, deduplicated by `file_` ID. Take only **`newUrls[0]`** — the first new URL is the finished image; subsequent URLs are still-loading previews.
-- Download as `{slug}.png`.
+- Download as `{image-slug}.png` to the path above.
 - Download via Blob URL:
   ```js
   fetch(newUrls[0]).then(r => r.blob()).then(blob => {
@@ -268,7 +265,7 @@ After each image: log result (`✅ done` / `❌ failed`), continue to next.
 ## Phase 5b: Update Journal Entry *(all modes)*
 
 - In the `<section>` for `{slug}`, set `__Status:__` to `generated`.
-- The `![…](assets/images/{slug}.png)` embed is already present (written by `:create-image`) and now renders the saved PNG — no change needed unless the path differs from the saved location, in which case update it to match.
+- The `![…]({__Datei:__ path})` embed is already present (written by `:create-image`) and now renders the saved PNG — no change needed since the file was saved to that exact path.
 
 ---
 
@@ -276,7 +273,7 @@ After each image: log result (`✅ done` / `❌ failed`), continue to next.
 
 ```
 Batch complete.
-✅  3 images generated and saved to assets/images/
+✅  3 images generated and saved to their recorded `__Datei:__` paths
 ⏭   1 skipped (already existed)
 ❌  0 failed
 ```

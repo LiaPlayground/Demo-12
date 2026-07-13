@@ -14,7 +14,7 @@ Suggest images for visualization, either as a search term or as a concrete image
 - Agenda info (modules/sessions) from `journal.md` → `## Agenda`
 - Terminology & conventions from `journal.md` → `## Course Context`
 - LiaScript template usage rules from `journal.md` → `## Templates` (if present)
-- Currently open document `materials/{number}-{type}.md`
+- Currently open material document — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode
 - Optionally, corresponding session subsection in `journal.md` → `## Sessions`
 - Didactic inputs from `journal.md` → `## Didactics` (concept, course type, difficulty; not the primary persona source)
 - Open questions or ideas from instructors (discussion points)
@@ -22,7 +22,7 @@ Suggest images for visualization, either as a search term or as a concrete image
 ## Output
 
 - LiaScript / Markdown using the syntax from `data/liascript-cheat-sheet.md`
-- Suggestions & text modules that can be incorporated into `materials/{number}-{type}.md`
+- Suggestions & text modules that can be incorporated into the currently open material document (see `data/file-structure-modes.md`)
 - Revised sections in the persona style
 - Image prompts or text diagrams, if applicable
 
@@ -47,7 +47,7 @@ Suggest images for visualization, either as a search term or as a concrete image
    - **Do not just confirm** — a response that only agrees without adding a question or observation is not enough
    - Positive feedback only when it is genuinely earned and specific
 5. **Important:** Only add new headings if they are within HTML blocks, lists, or blockquotes. (**Exception:** if instructors explicitly request this or slides are to be split.)
-6. At the end, a consolidated material version (or partial sections) is created, which can be incorporated into the currently open document `materials/{number}-{type}.md`.
+6. At the end, a consolidated material version (or partial sections) is created, which can be incorporated into the currently open material document (see `data/file-structure-modes.md`).
 7. When the instructor **approves** the material for this session: update the overview table in `journal.md` → `## Sessions`, set the Done column to ✅ for the current session. Optionally add a short note (e.g., open points, follow-up ideas) in the Notes column. Then run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
 8. After approval, 🎛️ ask with structured question (single choice):
    - **Yes, validate now** — run `:validate-course {number} {type}`
@@ -57,4 +57,4 @@ Suggest images for visualization, either as a search term or as a concrete image
 
 - This task is **dialog-oriented** and remains open until instructors "approve" the materials.
 - The goal is **co-authoring**: the agent writes _with_, not _instead of_ the instructor.
-- Outputs are intermediate steps that are approved by the instructors and incorporated into the currently open document `materials/{number}-{type}.md`.
+- Outputs are intermediate steps that are approved by the instructors and incorporated into the currently open material document (see `data/file-structure-modes.md`).

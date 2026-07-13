@@ -45,50 +45,58 @@ comment:  Short description of the course
 
 - Each `##` heading **always starts a new slide**.
 
-- Subheadings (`###` to `######`) are generally **allowed**, but:
+- `###` (one level below `##`) is safe to use **bare, directly under a `##` slide** — it does not require a container and does not start a new slide/segment.
 
-  - They may **not appear freely**.
-  - They are only allowed if **embedded** inside:
+- Subheadings from `####` down to `######` are only allowed if **embedded** inside:
 
-    - an **HTML block** (`<div>…</div>`)
-    - a **list** (`-`, `*`)
-    - a **blockquote** (`>`)
+  - an **HTML block** (`<div>…</div>` or a semantic wrapper such as `<section>…</section>`)
+  - a **list** (`-`, `*`)
+  - a **blockquote** (`>`)
 
-- A “naked” subheading outside such containers counts as a new slide/segment and is therefore **not allowed**.
+- A “naked” `####`-or-deeper subheading outside such containers counts as a new slide/segment and is therefore **not allowed**.
 
 **Allowed patterns:**
 
 ```lia
 ## Slide 1
 
+### Bare subsection directly under the slide — no container needed
+
 <div>
-### Subsection inside an HTML block
-#### One level deeper
+#### One level deeper — must be embedded
 </div>
 ```
 
 ```lia
 ## Slide 2
 
-- List with content
-  - ### Subheading inside a list
-    #### One level deeper
+### Bare subsection — fine on its own
+
+<section>
+#### Subsection embedded in a semantic <section> wrapper
+</section>
 ```
 
 ```lia
 ## Slide 3
 
-> ### Subheading in a blockquote
-> #### Deeper level in the blockquote
+- List with content
+  - #### Subheading inside a list
 ```
-
-**Not allowed (outside of containers):**
 
 ```lia
 ## Slide 4
 
-### Subheading without container   ❌
-#### Even deeper without container ❌
+> #### Subheading in a blockquote
+```
+
+**Not allowed (`####`-or-deeper outside of containers):**
+
+```lia
+## Slide 5
+
+### Bare subsection — fine
+#### Subheading without container   ❌
 ```
 
 ---

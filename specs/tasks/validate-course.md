@@ -15,8 +15,9 @@ Can be run in two modes:
 - `checklists/course-quality-checklist.md` — structured checklist
 - `data/liascript-cheat-sheet.md` — syntax reference for LiaScript checks
 - `templates/session-validation.yaml` — template for each stored session validation report
-- For session mode: `materials/{number}-{type}.md`, matching overview row in `journal.md` → `## Sessions`, and matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
-- For course mode: `journal.md` sections (`## Outline`, `## Didactics`, `## Agenda`, `## Sessions`) and `materials/`
+- File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
+- For session mode: the material document for this session (resolved per File Structure mode), matching overview row in `journal.md` → `## Sessions`, and matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
+- For course mode: `journal.md` sections (`## Outline`, `## Didactics`, `## Agenda`, `## Sessions`) and all material documents (`materials/` in multi-file mode, or the `##` chapters of root `README.md` in single-file mode)
 
 ## Output
 
@@ -45,7 +46,7 @@ Rules:
 1. Load `journal.md` → `## Course Context` for course type and conventions.
 2. Load `journal.md` → `## Agenda` to get the learning objectives for this session.
 3. Load `data/liascript-cheat-sheet.md` as syntax reference.
-4. Open `materials/{number}-{type}.md` and check:
+4. Open the material document for this session — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode — and check:
 
    **Content checks:**
    - [ ] All learning objectives from `journal.md` → `## Agenda` for this session are addressed
@@ -115,10 +116,10 @@ Rules:
    - Confirm the overview table appears directly below `## Sessions`
    - All expected sessions have a row in the overview table
    - Cross-check: every ✅ Skeleton row has a matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
-   - Cross-check: every ✅ Material row has a file in `materials/`
+   - Cross-check: every ✅ Material row has its material document present — a file in `materials/{number}-{slug}/README.md` in multi-file mode, or a matching `##` chapter in root `/README.md` in single-file mode (see `data/file-structure-modes.md`)
    - All sessions marked ✅ Done `[required before publishing]`
 
-7. **Check each material file** in `materials/` (same LiaScript + content checks as Session Mode Step 4).
+7. **Check each material document** (same LiaScript + content checks as Session Mode Step 4).
    For each material file, fill `templates/session-validation.yaml` with `Mode: course` and create or replace the matching `#### Validation Report` in that session subsection under `journal.md` → `## Sessions`.
 
 8. **Consistency check across project memory and materials:**

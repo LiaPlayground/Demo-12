@@ -28,6 +28,13 @@ template:
           3. Pacing: [scheduled | learner-driven | event-based]
           4. Assessment defaults: [quizzes | reflection | assignments | none]
 
+    - id: file-structure
+      title: File Structure
+      template: |
+        * __File Structure:__
+          1. Mode: [single-file | multi-file] — see `data/file-structure-modes.md`
+          2. Session folder naming: [n/a for single-file | `{number}-{slug}`]
+
     - id: conventions
       title: Conventions & Standards
       template: |

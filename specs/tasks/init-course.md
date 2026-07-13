@@ -46,6 +46,18 @@ The course context acts as the governance layer: it defines the course type, ter
    | single-lesson    | lesson            | tutor           | optional       | n/a             | optional quiz           |
    | improve-existing | (from existing)   | (from existing) | optional       | (from existing) | (from existing)         |
 
+   Also set the **File Structure** default from course type (see `data/file-structure-modes.md`):
+
+   | Type | Default File Structure mode |
+   | ---- | ---------------------------- |
+   | lecture-series | multi-file |
+   | self-paced | multi-file |
+   | workshop | multi-file |
+   | single-lesson | single-file |
+   | improve-existing | detected in `:analyze-existing` |
+
+   State the default to the instructor, e.g.: "Since this is a {type} course, I'll structure materials as {mode} ({path pattern from `data/file-structure-modes.md`}). Let me know if you'd prefer the other approach." Record their answer (default or override) — this is a stated default, not a blocking question.
+
    For **self-paced** and **single-lesson**, 🎛️ ask agenda preference (structured question — single choice):
    - **Yes** — helps with structure planning, especially for longer content
    - **No** — proceed directly to skeleton and materials
@@ -60,7 +72,7 @@ The course context acts as the governance layer: it defines the course type, ter
    - Accessibility: required / optional / not needed
    - LiaScript conventions: 💬 ask as free text only if instructor has specific requirements
 
-8. Fill the `templates/course-context.yaml` template with the collected inputs.
+8. Fill the `templates/course-context.yaml` template with the collected inputs, including the `__File Structure:__` field (mode + session folder naming) from step 6.
 9. Save the generated context by replacing the content of `journal.md` → `## Course Context` — keep it **flat** (`* __Label:__` bullets only, no sub-headings), exactly as the skeleton prescribes.
 10. If LiaScript conventions mention template imports, run `tasks/manage-templates.md` with `templates/course-templates.yaml`:
     - Add `import: {url}` to the main metadata header if missing

@@ -18,4 +18,7 @@ template:
 
         - Title, duration, type (lecture/exercise)
         - Learning objective(s), summary
-        - Automatic materials file (materials/{n}-{type}.md)
+        - Automatic materials path, resolved from `journal.md` → `## Course Context` →
+          `__File Structure:__` (see `data/file-structure-modes.md`): a `##` chapter in
+          root `README.md` for single-file mode, or `materials/{n}-{slug}/README.md`
+          for multi-file mode

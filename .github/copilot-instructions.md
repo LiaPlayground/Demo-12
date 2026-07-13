@@ -190,9 +190,11 @@ project_memory:
     - "Template `import:` lines are managed by tasks/manage-templates.md in the metadata header and documented in `## Templates`; keep the default Mermaid import — the Dashboard workflow map depends on it."
   principle: >
     All generated planning, state, review, validation, and note artifacts are stored as
-    named sections in `journal.md`. Only final teaching materials (`materials/`),
-    visual/media assets and prompts (`assets/`), and publishing/runtime files
-    (`project.yaml`, `.github/workflows/`) remain separate files.
+    named sections in `journal.md`. Only final teaching materials (root `README.md` in
+    single-file mode, or `materials/` in multi-file mode), visual/media assets and
+    prompts (`assets/` at the root in single-file mode, nested per session under
+    `materials/` in multi-file mode — see `data/file-structure-modes.md`), and
+    publishing/runtime files (`project.yaml`, `.github/workflows/`) remain separate files.
   required_sections:
     - "Dashboard"
     - "Course Context"
@@ -599,11 +601,12 @@ agent_coordination:
     - "Read `journal.md`, especially `## Course Context` and `## Validation`, to understand course type, project conventions, and publishing readiness"
     - "Read only `journal.md` → `## Agents` → `### Development-Agent` for project-specific publishing/git customization, if present"
     - "Do not read `### Coauthor`, `### Teaching-Agent`, `### Artist-Agent`, or `### Learner Personas` during activation"
-    - "Check if project.yaml exists and which materials are in materials/"
+    - "Read `journal.md` → `## Course Context` → `__File Structure:__` (see data/file-structure-modes.md) and remember which publishing path applies: single-file → no project.yaml, no GitHub Pages, just push + LiaScript viewer link; multi-file → project.yaml + GitHub Pages"
+    - "In multi-file mode, check if project.yaml exists and which materials are in materials/. In single-file mode, there is no project.yaml to check — just confirm root README.md and assets/ are up to date"
     - "Briefly acknowledge the handoff: 'I am taking over from the Teaching-Agent. Status: [summary from project memory + project files]'"
 
   suggest_back_to_teaching_when:
-    - "After :create-project is complete and GitHub Pages is set up → 'Project published. Back to the Teaching-Agent for further materials'"
+    - "After :create-project is complete (GitHub Pages set up in multi-file mode, or the repo pushed and viewer link handed over in single-file mode) → 'Project published. Back to the Teaching-Agent for further materials'"
     - "After :update-project is done → 'Update complete. Back to the Teaching-Agent'"
     - "When content, didactic, or session questions arise"
 
@@ -706,6 +709,8 @@ Offers two paths for each missing core section:
 ## Steps
 
 1. Load `journal.md` → `## Course Context` for course type, terminology, and conventions.
+   - If `__File Structure:__` is missing (older projects predate this field), detect it from disk (see `data/file-structure-modes.md`): a `materials/*/README.md` layout → `multi-file`; a single root `README.md` with multiple `##` chapters and no `materials/` folder → `single-file`. Add the detected mode to `## Course Context` and state it to the instructor for confirmation.
+   - If `materials/` exists but uses a folder-naming pattern other than `{number}-{slug}` (e.g. legacy `{number}-{type}` folders), note this as an improvement opportunity in step 7 rather than silently renaming existing folders.
 
 2. Scan the project root and relevant folders:
 
@@ -718,7 +723,9 @@ Offers two paths for each missing core section:
    | `journal.md` → `## Templates` | optional; required if template imports or macros are used |
    | `journal.md` → `## Sessions` | if sessions expected |
    | `journal.md` → `## Agents` | always; contains the Coauthor role, optional specialist customizations, and learner personas |
-   | `materials/`   | if sessions expected         |
+   | `journal.md` → `## Course Context` → `__File Structure:__` | always; detect from disk if missing (see step 1) |
+   | `materials/`   | if sessions expected and File Structure mode = multi-file |
+   | root `README.md` `##` chapters | if File Structure mode = single-file |
 
 3. Display a **Course Memory Status** table:
    - ✅ exists
@@ -757,6 +764,7 @@ Offers two paths for each missing core section:
 7. After all missing sections are handled, list **improvement opportunities** in the existing content:
    - Sessions without materials
    - Materials without session subsections
+   - Session folders whose naming doesn't match the `{number}-{slug}` convention (see `data/file-structure-modes.md`) — flag for the instructor to decide whether to rename or leave as legacy
    - Inconsistent terminology or persona style
    - Template macros used without matching `import:` metadata or `## Templates` documentation
    - Missing references or learning objectives
@@ -782,18 +790,30 @@ Produces a structured `course-bundle/` folder with an auto-generated index and a
 ## Inputs
 
 - `journal.md` — canonical project memory containing course context, outline, didactics, agenda, sessions, session status, validation, reviews, and notes backup
-- `materials/` — full session materials (primary content)
-- `assets/` — visual assets and prompts (if exists)
+- File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
+- **multi-file mode:** `materials/` — full session materials (primary content), each with its own nested `assets/`
+- **single-file mode:** root `README.md` (primary content) and `assets/` (if exists)
 - `journal.md` → `## Validation` → `### Latest Validation Summary` — latest QA gate (**required, must show `Mode: course` and `Result: PASS`**)
 
 ## Output
 
+**multi-file mode:**
 ```
 course-bundle/
 ├── bundle-index.md          ← auto-generated index
 ├── journal.md               ← canonical project memory
-├── materials/
-│   └── {n}-{type}.md
+└── materials/
+    └── {n}-{slug}/
+        ├── README.md
+        └── assets/          ← if exists
+```
+
+**single-file mode:**
+```
+course-bundle/
+├── bundle-index.md          ← auto-generated index
+├── journal.md               ← canonical project memory
+├── README.md                ← the whole course
 └── assets/                  ← if exists
 ```
 
@@ -804,9 +824,9 @@ course-bundle/
 
 2. Read course title and abstract from `journal.md` → `## Outline`.
 
-3. Scan all source folders and collect files:
-   - **Required:** `journal.md`, all files in `materials/`
-   - **Conditional:** `assets/` (if exists)
+3. Scan all source folders and collect files, according to `journal.md` → `## Course Context` → `__File Structure:__`:
+   - **multi-file:** `journal.md`, all files in `materials/` (including each session's nested `assets/`)
+   - **single-file:** `journal.md`, root `README.md`, and `assets/` (if exists)
 
 4. Generate `bundle-index.md`:
 
@@ -815,24 +835,25 @@ course-bundle/
 
    Generated: YYYY-MM-DD
    Course type: [type from `journal.md` → `## Course Context`]
+   File Structure: [single-file | multi-file]
    Validation: PASS (see `journal.md` → `## Validation` → `### Latest Validation Summary`)
 
    ## Contents
 
-   | File                    | Description                              |
-   |-------------------------|------------------------------------------|
-   | journal.md              | Project memory: context, outline, didactics, agenda, skeletons, sessions, validation, reviews, notes |
-   | materials/{n}-{type}.md | Session N: [title from `journal.md` → `## Agenda`] |
-   | assets/                 | Visual assets and prompts, if present |
+   | File                              | Description                              |
+   |------------------------------------|------------------------------------------|
+   | journal.md                        | Project memory: context, outline, didactics, agenda, skeletons, sessions, validation, reviews, notes |
+   | README.md _(single-file)_ / materials/{n}-{slug}/README.md _(multi-file)_ | Session N: [title from `journal.md` → `## Agenda`] |
+   | assets/ _(single-file, root)_ / materials/{n}-{slug}/assets/ _(multi-file, per session)_ | Visual assets and prompts, if present |
 
    ## Quick Start
 
    - **Instructor handoff:** Start with `journal.md` → `## Outline` and `journal.md` → `## Didactics`
-   - **LiaScript publish:** Use files in `materials/` directly
+   - **LiaScript publish:** Use `README.md` (single-file) or the files in `materials/` (multi-file) directly
    - **Quality audit:** See `journal.md` → `## Validation`
    ```
 
-5. Copy `journal.md`, `materials/`, and optional `assets/` into `course-bundle/` preserving subfolder structure.
+5. Copy `journal.md` and the mode-appropriate content (`README.md` + `assets/` for single-file, or `materials/` for multi-file) into `course-bundle/`, preserving subfolder structure.
 
 6. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
 
@@ -861,7 +882,7 @@ Suggest images for visualization, either as a search term or as a concrete image
 - Agenda info (modules/sessions) from `journal.md` → `## Agenda`
 - Terminology & conventions from `journal.md` → `## Course Context`
 - LiaScript template usage rules from `journal.md` → `## Templates` (if present)
-- Currently open document `materials/{number}-{type}.md`
+- Currently open material document — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode
 - Optionally, corresponding session subsection in `journal.md` → `## Sessions`
 - Didactic inputs from `journal.md` → `## Didactics` (concept, course type, difficulty; not the primary persona source)
 - Open questions or ideas from instructors (discussion points)
@@ -869,7 +890,7 @@ Suggest images for visualization, either as a search term or as a concrete image
 ## Output
 
 - LiaScript / Markdown using the syntax from `data/liascript-cheat-sheet.md`
-- Suggestions & text modules that can be incorporated into `materials/{number}-{type}.md`
+- Suggestions & text modules that can be incorporated into the currently open material document (see `data/file-structure-modes.md`)
 - Revised sections in the persona style
 - Image prompts or text diagrams, if applicable
 
@@ -894,7 +915,7 @@ Suggest images for visualization, either as a search term or as a concrete image
    - **Do not just confirm** — a response that only agrees without adding a question or observation is not enough
    - Positive feedback only when it is genuinely earned and specific
 5. **Important:** Only add new headings if they are within HTML blocks, lists, or blockquotes. (**Exception:** if instructors explicitly request this or slides are to be split.)
-6. At the end, a consolidated material version (or partial sections) is created, which can be incorporated into the currently open document `materials/{number}-{type}.md`.
+6. At the end, a consolidated material version (or partial sections) is created, which can be incorporated into the currently open material document (see `data/file-structure-modes.md`).
 7. When the instructor **approves** the material for this session: update the overview table in `journal.md` → `## Sessions`, set the Done column to ✅ for the current session. Optionally add a short note (e.g., open points, follow-up ideas) in the Notes column. Then run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
 8. After approval, 🎛️ ask with structured question (single choice):
    - **Yes, validate now** — run `:validate-course {number} {type}`
@@ -904,7 +925,7 @@ Suggest images for visualization, either as a search term or as a concrete image
 
 - This task is **dialog-oriented** and remains open until instructors "approve" the materials.
 - The goal is **co-authoring**: the agent writes _with_, not _instead of_ the instructor.
-- Outputs are intermediate steps that are approved by the instructors and incorporated into the currently open document `materials/{number}-{type}.md`.
+- Outputs are intermediate steps that are approved by the instructors and incorporated into the currently open material document (see `data/file-structure-modes.md`).
 
 ==================== END: specs/tasks/coauthor-materials.md ====================
 
@@ -1107,6 +1128,7 @@ Creates professional, actionable prompts for AI image generators that maintain v
 - Website color palette from `journal.md` → `## Visual Identity` (`__Website Color Palette:__` bullet)
 - Course context from `journal.md` → `## Outline` (`__Abstract:__` bullet) (for thematic alignment)
 - Course language from `journal.md` → `## Course Context` (Language field — for in-image text language)
+- File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`) — determines the asset path saved in `__Datei:__` below
 
 ## Output
 
@@ -1134,12 +1156,12 @@ Creates professional, actionable prompts for AI image generators that maintain v
 8. Generate a detailed, actionable prompt.
 9. Include accessibility considerations (alt text suggestion).
 10. Present the prompt in a clear format.
-11. Derive a `{slug}` from the description (kebab-case).
+11. Derive an `{image-slug}` from the description (kebab-case).
 12. Save into the target session's `#### Images` block — always, without asking:
     - Locate the `### {number}. {title}` subsection in `journal.md` → `## Sessions`.
     - If it has no `#### Images` block, create one (placed after `**References:**`, before `#### Validation Report` if present).
-    - Append a new `<section>` entry using the **Journal Entry Format** below. If a `<section>` with the same `#### {slug}` already exists, replace it.
-    - Confirm: "Prompt saved: `journal.md` → `## Sessions` → `### {number}. {title}` → `#### Images` → `{slug}`"
+    - Append a new `<section>` entry using the **Journal Entry Format** below. If a `<section>` with the same `#### {image-slug}` already exists, replace it.
+    - Confirm: "Prompt saved: `journal.md` → `## Sessions` → `### {number}. {title}` → `#### Images` → `{image-slug}`"
 
 ## Output Format
 
@@ -1177,26 +1199,33 @@ Technical Specifications:
 
 Each image is stored as one `<section>` inside the session's `#### Images` block. The image is **always** embedded — the `![…]` line renders the PNG once `:generate-image` has saved it (and shows as a broken-image placeholder until then, which is the intended "not yet generated" signal).
 
+The `{image-slug}` here (derived from the image description) is independent of the session's own folder slug — do not confuse the two (see `data/file-structure-modes.md`).
+
+Resolve `{path}` from `journal.md` → `## Course Context` → `__File Structure:__`:
+- **single-file:** `assets/images/{image-slug}.png`
+- **multi-file:** `materials/{number}-{slug}/assets/images/{image-slug}.png` (this session's own folder)
+
 ```markdown
 #### Images
 
 <section>
 
-#### {slug}
+#### {image-slug}
 
-* __Datei:__ assets/images/{slug}.png
+* __Datei:__ {path}
 * __Status:__ prompt-ready
 * __Alt-Text:__ {descriptive alt text}
 * __Prompt:__
   "{full detailed prompt ready for image generator}"
 
-![{alt text}](assets/images/{slug}.png)
+![{alt text}]({path})
 
 </section>
 ```
 
 - `__Status:__` starts as `prompt-ready`; `:generate-image` flips it to `generated` after saving the PNG.
 - One `<section>` per image; multiple images stack under the same `#### Images` block.
+- `:generate-image` saves to the exact `{path}` recorded here — it does not re-derive the path independently.
 
 ## Special Features
 
@@ -1521,8 +1550,10 @@ Defines title, target audience, abstract, learning objectives, and optionally a 
 
 ## Purpose
 
-Automates the creation of a `project.yaml` for LiaScript publishing and sets up a GitHub Pages workflow.  
-Supports users with git operations, GitHub integration, and project publishing.
+Sets up publishing for the course. Behavior branches hard on `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`):
+
+- **single-file:** no `project.yaml`, no GitHub Actions workflow, no GitHub Pages. Publishing is just pushing `README.md` + `assets/` to GitHub — GitHub's raw content hosting is the whole story. Hand back a direct LiaScript live-viewer link.
+- **multi-file:** generates `project.yaml` (one card per session) and a GitHub Pages workflow — as before.
 
 ## Inputs
 
@@ -1530,34 +1561,52 @@ Supports users with git operations, GitHub integration, and project publishing.
 - `journal.md` → `## Validation` → `### Latest Validation Summary` (**must show `Mode: course` and `Result: PASS`**)
 - User's git/GitHub experience (ask before proceeding)
 - `data/liascript-workflows.md` — internal reference for all CLI options, `project.yaml` schema, and workflow templates (load this first)
+- File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
 
 ## Output
 
-- `project.yaml` in the root folder (includes all materials)
-- GitHub Actions workflow for LiaScript export and publishing
+- **single-file:** nothing generated on disk; a confirmed git push and the LiaScript live-viewer URL
+- **multi-file:** `project.yaml` in the root folder (includes all materials as separate cards) and a GitHub Actions workflow for LiaScript export and publishing
 
 ## Steps
 
 0. Load `data/liascript-workflows.md` for the full CLI reference, `project.yaml` schema, and workflow templates. Only fetch the external URLs if a specific question is not answered by the internal reference.
 1. Check `journal.md` → `## Validation` → `### Latest Validation Summary`.
    - If missing, not `Mode: course`, or not `Result: PASS`: block publishing and ask the instructor to run `:validate-course`.
-2. Ask the user about their git/GitHub experience and if they know how to activate GitHub Pages.
-3. Refer to the all files in the `materials/` folder or ask the user which one to embed in the materials list.
-4. Read color and style information from `journal.md` → `## Visual Identity` for project.yaml styling.
-5. Review the internal reference for the latest workflow and publishing best practices.
-6. Generate a `project.yaml` in the root folder, including all materials and styled according to the style guide.
-7. Create a GitHub Actions workflow for LiaScript export and publishing to GitHub Pages. The workflow must always overwrite the gh-pages branch completely (no history or previous files kept), e.g. by using `force_orphan: true` in the deployment step.
-8. Check which files must be added to git and which need to be commited.
-9. Explain each step to the user and confirm before making changes.
-10. Offer to commit and push changes and to GitHub if the user agrees.
-11. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place (publishing state).
+2. Read `journal.md` → `## Course Context` → `__File Structure:__` and branch:
+
+### single-file mode
+
+3. Ask the user about their git/GitHub experience.
+4. Check which files must be added to git and which need to be committed (`README.md`, `assets/`).
+5. Explain that single-file mode publishes by pushing to GitHub directly — no `project.yaml`, no workflow, no GitHub Pages step (see `data/file-structure-modes.md` → "Publishing"). Confirm before proceeding.
+6. Offer to commit and push changes to GitHub if the user agrees (hand off to `:manage-git` for the actual git operations).
+7. Once pushed, determine the repo's `{owner}/{repo}/{branch}` and present the LiaScript live-viewer URL:
+   ```
+   https://liascript.github.io/course/?https://raw.githubusercontent.com/{owner}/{repo}/{branch}/README.md
+   ```
+   Note this is a stable LiaScript convention — recommend the instructor spot-check it against https://liascript.github.io if anything looks off (per epistemic rules: never assert unverified syntax as certain).
+8. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place (publishing state: pushed + viewer URL, no project.yaml/Pages).
+
+### multi-file mode
+
+3. Ask the user about their git/GitHub experience and if they know how to activate GitHub Pages.
+4. Build the `collection:` entries: one entry per `materials/{number}-{slug}/README.md`, in session order; ask the user if any session should be excluded.
+5. Read color and style information from `journal.md` → `## Visual Identity` for project.yaml styling.
+6. Review the internal reference for the latest workflow and publishing best practices.
+7. Generate a `project.yaml` in the root folder, including all materials and styled according to the style guide.
+8. Create a GitHub Actions workflow for LiaScript export and publishing to GitHub Pages. The workflow must always overwrite the gh-pages branch completely (no history or previous files kept), e.g. by using `force_orphan: true` in the deployment step.
+9. Check which files must be added to git and which need to be committed.
+10. Explain each step to the user and confirm before making changes.
+11. Offer to commit and push changes to GitHub if the user agrees.
+12. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place (publishing state).
 
 ## Usage
 
 This task is invoked when:
-- Setting up a new LiaScript project for publishing
-- Automating project.yaml and workflow creation
-- Assisting users with git/GitHub operations and publishing
+- Setting up publishing for the first time, in either mode
+- Automating project.yaml and workflow creation (multi-file mode)
+- Assisting users with git/GitHub operations and publishing (both modes)
 
 ==================== END: specs/tasks/create-project.md ====================
 
@@ -1702,13 +1751,13 @@ Requires the **chrome-devtools MCP server** to be active and Chrome running with
 ## Inputs
 
 - **Single mode:** the `<section>` whose heading is `#### {slug}`, found in any session's `#### Images` block in `journal.md` → `## Sessions`
-- **Batch mode:** all `<section>` image entries across every session's `#### Images` block (skips entries whose `__Status:__` is `generated` or whose `assets/images/{slug}.png` already exists)
+- **Batch mode:** all `<section>` image entries across every session's `#### Images` block (skips entries whose `__Status:__` is `generated` or whose file at `__Datei:__` already exists)
 - Chrome DevTools MCP availability (checked at task start)
 - Course language from `journal.md` → `## Course Context` (safety-net: appended to prompt if no language instruction is already present)
 
 ## Output
 
-- Downloaded images saved to `assets/images/{slug}.png` (or fallback path)
+- Downloaded images saved to the exact path already recorded in that entry's `__Datei:__` field (written by `:create-image`, mode-resolved per `data/file-structure-modes.md` — do not re-derive independently)
 - Confirmation per image; batch summary at the end
 
 ## MCP Setup (required)
@@ -1758,15 +1807,15 @@ The `chrome-devtools` MCP server must be configured in VS Code's `mcp.json`.
 ## Phase 2b: Batch Mode — Collect Queue
 
 3. Scan every session's `#### Images` block in `journal.md` → `## Sessions` for `<section>` image entries.
-4. Read the slug per entry from its `#### {slug}` heading.
+4. Read the slug and target path per entry from its `#### {image-slug}` heading and `__Datei:__` field.
 5. Skip if already generated:
-   - `__Status:__` is `generated`, **or** `assets/images/{slug}.png` already exists → mark `⏭ skipped`
-   - otherwise (`__Status:__ prompt-ready` and no PNG) → add to queue
+   - `__Status:__` is `generated`, **or** the file at `__Datei:__` already exists → mark `⏭ skipped`
+   - otherwise (`__Status:__ prompt-ready` and no file yet) → add to queue
 6. Print queue:
    ```
    Batch queue: {N} to process, {M} skipped (already done)
-   - fox-samurai  → assets/images/fox-samurai.png
-   - whale-astronaut → assets/images/whale-astronaut.png
+   - fox-samurai  → {__Datei:__ path from that entry}
+   - whale-astronaut → {__Datei:__ path from that entry}
    ```
 7. 🎛️ Confirm: **Start / Cancel**
 
@@ -1936,12 +1985,9 @@ After each image: log result (`✅ done` / `❌ failed`), continue to next.
 
 ## Phase 5: Download and Save *(single + sequential batch)*
 
-- Determine save path:
-  - `assets/images/` exists → `assets/images/{slug}.png`
-  - `assets/` exists → `assets/{slug}.png`
-  - Neither → `~/Downloads/{slug}.png` (inform instructor)
+- Save path: use the exact path already recorded in this entry's `__Datei:__` field (written by `:create-image`, already resolved for the active File Structure mode — see `data/file-structure-modes.md`). Create the containing folder if it does not exist yet. Only fall back to `~/Downloads/{image-slug}.png` if `__Datei:__` is missing entirely (inform the instructor).
 - Collect new `file_` URLs via `urlsBefore` diff, deduplicated by `file_` ID. Take only **`newUrls[0]`** — the first new URL is the finished image; subsequent URLs are still-loading previews.
-- Download as `{slug}.png`.
+- Download as `{image-slug}.png` to the path above.
 - Download via Blob URL:
   ```js
   fetch(newUrls[0]).then(r => r.blob()).then(blob => {
@@ -1956,7 +2002,7 @@ After each image: log result (`✅ done` / `❌ failed`), continue to next.
 ## Phase 5b: Update Journal Entry *(all modes)*
 
 - In the `<section>` for `{slug}`, set `__Status:__` to `generated`.
-- The `![…](assets/images/{slug}.png)` embed is already present (written by `:create-image`) and now renders the saved PNG — no change needed unless the path differs from the saved location, in which case update it to match.
+- The `![…]({__Datei:__ path})` embed is already present (written by `:create-image`) and now renders the saved PNG — no change needed since the file was saved to that exact path.
 
 ---
 
@@ -1964,7 +2010,7 @@ After each image: log result (`✅ done` / `❌ failed`), continue to next.
 
 ```
 Batch complete.
-✅  3 images generated and saved to assets/images/
+✅  3 images generated and saved to their recorded `__Datei:__` paths
 ⏭   1 skipped (already existed)
 ❌  0 failed
 ```
@@ -2037,6 +2083,18 @@ The course context acts as the governance layer: it defines the course type, ter
    | single-lesson    | lesson            | tutor           | optional       | n/a             | optional quiz           |
    | improve-existing | (from existing)   | (from existing) | optional       | (from existing) | (from existing)         |
 
+   Also set the **File Structure** default from course type (see `data/file-structure-modes.md`):
+
+   | Type | Default File Structure mode |
+   | ---- | ---------------------------- |
+   | lecture-series | multi-file |
+   | self-paced | multi-file |
+   | workshop | multi-file |
+   | single-lesson | single-file |
+   | improve-existing | detected in `:analyze-existing` |
+
+   State the default to the instructor, e.g.: "Since this is a {type} course, I'll structure materials as {mode} ({path pattern from `data/file-structure-modes.md`}). Let me know if you'd prefer the other approach." Record their answer (default or override) — this is a stated default, not a blocking question.
+
    For **self-paced** and **single-lesson**, 🎛️ ask agenda preference (structured question — single choice):
    - **Yes** — helps with structure planning, especially for longer content
    - **No** — proceed directly to skeleton and materials
@@ -2051,7 +2109,7 @@ The course context acts as the governance layer: it defines the course type, ter
    - Accessibility: required / optional / not needed
    - LiaScript conventions: 💬 ask as free text only if instructor has specific requirements
 
-8. Fill the `templates/course-context.yaml` template with the collected inputs.
+8. Fill the `templates/course-context.yaml` template with the collected inputs, including the `__File Structure:__` field (mode + session folder naming) from step 6.
 9. Save the generated context by replacing the content of `journal.md` → `## Course Context` — keep it **flat** (`* __Label:__` bullets only, no sub-headings), exactly as the skeleton prescribes.
 10. If LiaScript conventions mention template imports, run `tasks/manage-templates.md` with `templates/course-templates.yaml`:
     - Add `import: {url}` to the main metadata header if missing
@@ -2207,10 +2265,12 @@ Converts a **Session** into a detailed **Session Material**.
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
 - Style, difficulty level, and didactic concept from `journal.md` → `## Didactics`
 - Terminology from `journal.md` → `## Course Context`
+- File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
 
 ## Output
 
-- `materials/{number}-{type}.md`
+- **multi-file mode:** `materials/{number}-{slug}/README.md` (new folder; `{slug}` derived once from the session title — see `data/file-structure-modes.md`)
+- **single-file mode:** the `##` chapter matching this session, inserted/replaced in session-number order inside root `/README.md`
 - Structure based on `templates/session-material.yaml`
 
 ## Steps
@@ -2226,8 +2286,10 @@ Converts a **Session** into a detailed **Session Material**.
 6. Consider didactic inputs.
 7. Generate planned outline.
 8. Apply template.
-9. If the material uses macros from `journal.md` → `## Templates`, include each required `import: {url}` line in the LiaScript metadata header of `materials/{number}-{type}.md`.
-10. Save the material file as `materials/{number}-{type}.md`.
+9. If the material uses macros from `journal.md` → `## Templates`, include each required `import: {url}` line in the LiaScript metadata header (multi-file: the new file's own header; single-file: the shared root `README.md` header, if not already present).
+10. Resolve the File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`) and save accordingly:
+    - **multi-file:** derive `{slug}` from the session title, create `materials/{number}-{slug}/README.md` (and its `assets/` subfolder on demand, not upfront).
+    - **single-file:** insert or replace the `##` chapter for this session inside root `/README.md`, keeping chapters in session-number order.
 11. Update the overview table in `journal.md` → `## Sessions`: set Material column to ✅ for session `{number}`.
 12. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
 
@@ -2249,19 +2311,19 @@ Equivalent to BMAD's "Quick Flow" — minimal overhead for small, targeted chang
 - `number`: session number
 - `type`: session type (`lecture` or `exercise`)
 - `description`: what to fix (brief, e.g., "Typo in section 3", "Fix quiz syntax in slide 5", "Replace example for learning objective 2")
-- `materials/{number}-{type}.md` — the file to change
+- The material document to change — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode
 - `journal.md` → `## Course Context` — for conventions and terminology
 - `data/liascript-cheat-sheet.md` — for syntax reference if the fix involves LiaScript
 
 ## Output
 
-- Updated `materials/{number}-{type}.md` (single targeted change only)
+- Updated material document (single targeted change only)
 - Short inline confirmation of what was changed and PASS/FAIL of mini-validation
 
 ## Steps
 
 1. **Scope confirmation:** State what will be changed and the acceptance criterion:
-   - "I will [describe the change] in `materials/{number}-{type}.md`. The change is complete when [condition]. Correct? (Yes / Adjust scope)"
+   - "I will [describe the change] in [material document]. The change is complete when [condition]. Correct? (Yes / Adjust scope)"
 
 2. **Make the targeted change only** — no refactoring, no adjacent edits, no style improvements beyond the stated fix.
 
@@ -2649,7 +2711,7 @@ Generated in sequence without interruption inside `journal.md`:
 Run each step silently (no approval prompts between steps):
 
 1. If `journal.md` does not exist, instantiate it from `templates/journal.md`: copy the template **1:1, byte for byte** — no edits, no added comments. The file is already a valid LiaScript document; its first HTML comment is the LiaScript metadata header (`@style`, imports) and must remain the first comment.
-2. Replace the content of `journal.md` → `## Course Context` from collected inputs — **flat** `* __Label:__` bullets only, no sub-headings (rule applies to all sections below as well).
+2. Replace the content of `journal.md` → `## Course Context` from collected inputs — **flat** `* __Label:__` bullets only, no sub-headings (rule applies to all sections below as well). Set `__File Structure:__` from the course type default in `data/file-structure-modes.md` (single-lesson → single-file, all others → multi-file) and mention the default in the Phase 3 completion summary so the instructor can override it.
 3. Replace the content of `journal.md` → `## Outline`.
 4. Replace the content of `journal.md` → `## Didactics` — including the **Persona Voice Sample** bullet.
 5. If template imports were provided, run `tasks/manage-templates.md` and update `journal.md` → `## Templates`.
@@ -2682,7 +2744,7 @@ After each section is saved, print a brief progress line:
 > The journal's `## Dashboard` section is maintained exclusively by `tasks/update-dashboard.md` (already run in Phase 2, step 9).
 
 7. Print completion summary:
-   > "Scaffold completed. `journal.md` updated with [N] sections/entries."
+   > "Scaffold completed. `journal.md` updated with [N] sections/entries. File Structure: [single-file | multi-file] (default for {course type} — see `data/file-structure-modes.md`; let me know if you'd prefer the other approach)."
    >
    > | Section      | Status            |
    > |--------------|-------------------|
@@ -2879,40 +2941,52 @@ _Generated from the project sections below. Do not edit manually._
 
 ## Purpose
 
-Updates the `project.yaml` with any newly created or updated materials, commits these changes to git, and publishes them on GitHub (via GitHub Pages workflow).
+Publishes new or changed content. Behavior branches hard on `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`):
+
+- **single-file:** there is no `project.yaml` to update — just commit and push the changed `README.md` / `assets/` to GitHub. The existing LiaScript live-viewer URL keeps working unchanged (it always points at the latest `README.md` on the branch).
+- **multi-file:** updates `project.yaml`'s `collection:` entries and republishes via the existing GitHub Pages workflow — as before.
 
 ## Inputs
 
-- Existing `project.yaml` in the root folder
 - `journal.md` → `## Validation` → `### Latest Validation Summary` (**must show `Mode: course` and `Result: PASS`**)
 - User's git/GitHub experience (ask before proceeding)
-- Colors and style from `journal.md` → `## Visual Identity`
-- `data/liascript-workflows.md` — internal reference for `project.yaml` schema and workflow templates
+- File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
+- **multi-file only:** existing `project.yaml` in the root folder; colors and style from `journal.md` → `## Visual Identity`; `data/liascript-workflows.md` — internal reference for `project.yaml` schema and workflow templates
 
 ## Output
 
-- Updated `project.yaml` in the root folder (reflecting all current materials)
-- Committed and pushed changes to GitHub
-- Triggered GitHub Actions workflow to publish updates
+- **single-file:** committed and pushed changes to GitHub; no other generated files
+- **multi-file:** updated `project.yaml` in the root folder (reflecting all current materials); committed and pushed changes; triggered GitHub Actions workflow to publish updates
 
 ## Steps
 
 1. Check `journal.md` → `## Validation` → `### Latest Validation Summary`.
    - If missing, not `Mode: course`, or not `Result: PASS`: block publishing and ask the instructor to run `:validate-course`.
-2. Ask the user about their git/GitHub experience and confirm they want to update and publish.
-3. Scan the `materials/` folder for new or updated files.
-4. Update the `project.yaml` and ask the user to include all of the current materials or to import only a subset. Use colors and style from `journal.md` → `## Visual Identity` for any styling updates.
-5. Stage, commit, and push the updated `project.yaml` and new/changed materials to the repository.
-6. Trigger the GitHub Actions workflow to publish the updates (overwriting gh-pages as before).
-7. Explain each step to the user and confirm before making changes.
-8. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place (publishing state).
+2. Read `journal.md` → `## Course Context` → `__File Structure:__` and branch:
+
+### single-file mode
+
+3. Ask the user about their git/GitHub experience and confirm they want to publish the update.
+4. Stage, commit, and push the changed `README.md` and/or `assets/` to the repository (hand off to `:manage-git` for the actual git operations).
+5. Confirm: the LiaScript live-viewer URL from the last `:create-project` run is unchanged and now reflects the update (raw GitHub content updates as soon as the push lands — no rebuild step).
+6. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place (publishing state).
+
+### multi-file mode
+
+3. Ask the user about their git/GitHub experience and confirm they want to update and publish.
+4. Scan the `materials/` folder for new or updated session files.
+5. Update the `project.yaml` `collection:` entries accordingly (one entry per `materials/{number}-{slug}/README.md`) and ask the user to include all of the current materials or to import only a subset. Use colors and style from `journal.md` → `## Visual Identity` for any styling updates.
+6. Stage, commit, and push the updated `project.yaml` and new/changed materials to the repository.
+7. Trigger the GitHub Actions workflow to publish the updates (overwriting gh-pages as before).
+8. Explain each step to the user and confirm before making changes.
+9. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place (publishing state).
 
 ## Usage
 
 This task is invoked when:
 - New materials have been created or existing ones updated
-- The user wants to update the published project on GitHub Pages
-- Keeping `project.yaml` and published content in sync with the latest materials
+- The user wants to publish an update, in either mode
+- Keeping published content in sync with the latest materials
 
 ==================== END: specs/tasks/update-project.md ====================
 
@@ -2936,8 +3010,9 @@ Can be run in two modes:
 - `checklists/course-quality-checklist.md` — structured checklist
 - `data/liascript-cheat-sheet.md` — syntax reference for LiaScript checks
 - `templates/session-validation.yaml` — template for each stored session validation report
-- For session mode: `materials/{number}-{type}.md`, matching overview row in `journal.md` → `## Sessions`, and matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
-- For course mode: `journal.md` sections (`## Outline`, `## Didactics`, `## Agenda`, `## Sessions`) and `materials/`
+- File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
+- For session mode: the material document for this session (resolved per File Structure mode), matching overview row in `journal.md` → `## Sessions`, and matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
+- For course mode: `journal.md` sections (`## Outline`, `## Didactics`, `## Agenda`, `## Sessions`) and all material documents (`materials/` in multi-file mode, or the `##` chapters of root `README.md` in single-file mode)
 
 ## Output
 
@@ -2966,7 +3041,7 @@ Rules:
 1. Load `journal.md` → `## Course Context` for course type and conventions.
 2. Load `journal.md` → `## Agenda` to get the learning objectives for this session.
 3. Load `data/liascript-cheat-sheet.md` as syntax reference.
-4. Open `materials/{number}-{type}.md` and check:
+4. Open the material document for this session — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode — and check:
 
    **Content checks:**
    - [ ] All learning objectives from `journal.md` → `## Agenda` for this session are addressed
@@ -3036,10 +3111,10 @@ Rules:
    - Confirm the overview table appears directly below `## Sessions`
    - All expected sessions have a row in the overview table
    - Cross-check: every ✅ Skeleton row has a matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
-   - Cross-check: every ✅ Material row has a file in `materials/`
+   - Cross-check: every ✅ Material row has its material document present — a file in `materials/{number}-{slug}/README.md` in multi-file mode, or a matching `##` chapter in root `/README.md` in single-file mode (see `data/file-structure-modes.md`)
    - All sessions marked ✅ Done `[required before publishing]`
 
-7. **Check each material file** in `materials/` (same LiaScript + content checks as Session Mode Step 4).
+7. **Check each material document** (same LiaScript + content checks as Session Mode Step 4).
    For each material file, fill `templates/session-validation.yaml` with `Mode: course` and create or replace the matching `#### Validation Report` in that session subsection under `journal.md` → `## Sessions`.
 
 8. **Consistency check across project memory and materials:**
@@ -3215,7 +3290,10 @@ template:
 
         - Title, duration, type (lecture/exercise)
         - Learning objective(s), summary
-        - Automatic materials file (materials/{n}-{type}.md)
+        - Automatic materials path, resolved from `journal.md` → `## Course Context` →
+          `__File Structure:__` (see `data/file-structure-modes.md`): a `##` chapter in
+          root `README.md` for single-file mode, or `materials/{n}-{slug}/README.md`
+          for multi-file mode
 ```
 
 ==================== END: specs/templates/course-agenda.yaml ====================
@@ -3253,6 +3331,13 @@ template:
           2. Agenda required: [yes | optional | no]
           3. Pacing: [scheduled | learner-driven | event-based]
           4. Assessment defaults: [quizzes | reflection | assignments | none]
+
+    - id: file-structure
+      title: File Structure
+      template: |
+        * __File Structure:__
+          1. Mode: [single-file | multi-file] — see `data/file-structure-modes.md`
+          2. Session folder naming: [n/a for single-file | `{number}-{slug}`]
 
     - id: conventions
       title: Conventions & Standards
@@ -3642,6 +3727,10 @@ _Filled by `:init-course` from `templates/course-context.yaml`._
   3. Pacing: {{scheduled | learner-driven | event-based}}
   4. Assessment defaults: {{quizzes | reflection | assignments | none}}
 
+* __File Structure:__
+  1. Mode: {{single-file | multi-file}} — see `data/file-structure-modes.md`
+  2. Session folder naming: {{n/a for single-file | `{number}-{slug}`}}
+
 * __Conventions & Standards:__
   1. Language: {{de | en | other}}
   2. Tone: {{formal | informal | conversational}}
@@ -3790,7 +3879,7 @@ _Filled by `:create-agenda` from `templates/course-agenda.yaml` (skip if the cou
 
   | # | Title | Type | Duration | Learning Objective | Material |
   |---|-------|------|----------|--------------------|----------|
-  | 1 | {{title}} | {{lecture | exercise | ...}} | {{duration}} | {{objective}} | materials/1-{{type}}.md |
+  | 1 | {{title}} | {{lecture | exercise | ...}} | {{duration}} | {{objective}} | {{material path — resolved from `## Course Context` → `__File Structure:__`; see `data/file-structure-modes.md`}} |
 
 ---
 
@@ -4129,7 +4218,11 @@ template:
   version: 1.0
   output:
     format: markdown
-    filename: materials/{{number}}-{{type}}.md
+    filename: >
+      Resolved from `journal.md` → `## Course Context` → `__File Structure:__`
+      (see `data/file-structure-modes.md`): `materials/{{number}}-{{slug}}/README.md`
+      in multi-file mode, or the `##` chapter matching this session inside root
+      `README.md` in single-file mode.
   title: 'Session {{number}} ({{type | title}})'
   sections:
     - id: outline
@@ -4382,6 +4475,7 @@ template:
 - [ ] Language & tone conventions set
 - [ ] Agenda flag correct (yes / no / optional)
 - [ ] Person (Sie / Du / you) set
+- [ ] File Structure mode declared (`single-file` / `multi-file`) and matches the actual materials layout on disk (see `data/file-structure-modes.md`)
 
 ## Outline
 
@@ -4428,7 +4522,7 @@ template:
 - [ ] Overview table appears directly below `## Sessions`
 - [ ] All expected sessions have a row in the overview table
 - [ ] No session marked ✅ Skeleton without a matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
-- [ ] No session marked ✅ Material without a file in `materials/`
+- [ ] No session marked ✅ Material without its material document present (`materials/{number}-{slug}/README.md` in multi-file mode, or a matching `##` chapter in root `README.md` in single-file mode)
 - [ ] All sessions marked ✅ Done before publishing
 
 ## Session Subsections (`journal.md` → `## Sessions`)
@@ -4467,6 +4561,81 @@ template:
 - [ ] No sessions without materials
 
 ==================== END: specs/checklists/course-quality-checklist.md ====================
+
+
+==================== START: specs/data/file-structure-modes.md ====================
+
+# File Structure Modes
+
+> Read this before resolving any material or asset path. Referenced by `:init-course`, `:scaffold-course`, `:create-session`, `:promote-session`, `:coauthor-materials`, `:quick-fix`, `:validate-course`, `:assemble-bundle`, `:create-project`, `:update-project`, `:analyze-existing`, `:create-image`, and `:generate-image`.
+
+Every course runs in exactly one **File Structure** mode, recorded in `journal.md` → `## Course Context` → `__File Structure:__`. Tasks that read or write a material or asset path must resolve it from the active mode below — never hardcode a path shape inline.
+
+## single-file
+
+The entire course is one LiaScript document.
+
+- Course content: `/README.md` (project root). Every session/unit is a `##` chapter inside this one file — not a separate file.
+- Assets: `/assets/images/`, `/assets/videos/`, etc. — project root, shared across the whole course.
+- No `materials/` folder is created.
+- Typical for: `single-lesson`, or any course the instructor explicitly wants as one file.
+
+## multi-file
+
+Each session/unit is its own LiaScript document in its own folder.
+
+- Course content: `materials/{number}-{slug}/README.md` — one folder per session.
+- Assets: `materials/{number}-{slug}/assets/images/`, `materials/{number}-{slug}/assets/videos/`, etc. — scoped to that session, not shared with others.
+- `{slug}` is a kebab-case slug derived from the session title: lowercase, strip punctuation, spaces → hyphens, truncate to ~5 significant words if the title is long (e.g. "Are You in Scope? Essential vs. Important Entities" → `are-you-in-scope-essential-vs-important`).
+- **Compute the slug once**, when the session's material file/folder is first created (`:promote-session`). If the session title changes afterward, do not silently rename the folder — flag the mismatch and ask before renaming, since links and assets may reference the existing path.
+- Typical for: `lecture-series`, `self-paced`, `workshop`, or any course with multiple sessions.
+
+## Default by course type
+
+| Course type | Default mode |
+|---|---|
+| single-lesson | single-file |
+| lecture-series | multi-file |
+| self-paced | multi-file |
+| workshop | multi-file |
+| improve-existing | detected from the existing project (see `:analyze-existing`) |
+
+`:init-course` and `:scaffold-course` set this default automatically and state it to the instructor; it can be overridden any time by editing `journal.md` → `## Course Context` → `__File Structure:__`. Structural tasks re-read the field on every run — changing the field alone does not migrate already-existing files (see "Changing mode later").
+
+## Resolving paths
+
+| Task | single-file target | multi-file target |
+|---|---|---|
+| `:promote-session`, `:coauthor-materials`, `:quick-fix`, `:validate-course` (session mode) | the `##` chapter matching this session inside root `/README.md` | `materials/{number}-{slug}/README.md` |
+| `:create-image` / `:generate-image` asset path | `assets/images/{image-slug}.png` (or `/videos/`) | `materials/{number}-{slug}/assets/images/{image-slug}.png` (or `/videos/`) |
+| `:assemble-bundle` | copies `README.md` + `assets/` | copies `materials/` (each session folder keeps its own nested `assets/`) |
+| `:create-project` / `:update-project` | **not applicable** — see "Publishing" below | generates `project.yaml` with one `collection:` entry per `materials/{number}-{slug}/README.md` |
+| `:analyze-existing` scan | root `README.md` with multiple `##` chapters, no `materials/` folder | `materials/*/README.md` folders |
+
+Note: the **session-folder slug** (`{slug}` above, from the session title) and an **image slug** (from an image's description, used only for the filename) are independent — do not conflate them. A session folder never needs to be renamed when a new image is added to it.
+
+## Publishing
+
+Publishing looks fundamentally different in each mode — this is not just a path difference, it changes which commands even apply.
+
+**single-file:** `:create-project` and `:update-project` do not apply — there is no `project.yaml`, no GitHub Actions workflow, and no GitHub Pages step. The single `README.md` plus its `assets/` are simply pushed to GitHub via `:manage-git` like any other file; GitHub itself (raw content hosting) is the entire "publishing" story. Once pushed, hand the instructor the direct LiaScript live-viewer link:
+
+```
+https://liascript.github.io/course/?https://raw.githubusercontent.com/{owner}/{repo}/{branch}/README.md
+```
+
+(This URL pattern is a stable LiaScript convention — recommend the instructor spot-check it against https://liascript.github.io if anything about it looks off.) Never set up GitHub Pages for single-file mode, even as a convenience — a raw-content link is the whole point of this mode being lightweight.
+
+**multi-file:** `:create-project` / `:update-project` apply as specced elsewhere — `project.yaml` aggregates every session's `README.md` as its own card, exported via the LiaScript `project` format and deployed to GitHub Pages (see `tasks/create-project.md`, `tasks/update-project.md`, and `data/liascript-workflows.md` Section 4).
+
+## Changing mode later
+
+Switching modes on an existing course (splitting one file into many, or merging many into one) is a structural migration, not an automatic effect of editing the field. If the instructor asks to switch:
+1. Confirm the new mode and the consequences (file moves/merges) before touching anything.
+2. Move, split, or merge the material files and their assets accordingly.
+3. Update `journal.md` → `## Course Context` → `__File Structure:__` and any path references in `## Agenda` / `## Sessions` to match.
+
+==================== END: specs/data/file-structure-modes.md ====================
 
 
 ==================== START: specs/data/liascript-cheat-sheet.md ====================
@@ -4518,50 +4687,58 @@ comment:  Short description of the course
 
 - Each `##` heading **always starts a new slide**.
 
-- Subheadings (`###` to `######`) are generally **allowed**, but:
+- `###` (one level below `##`) is safe to use **bare, directly under a `##` slide** — it does not require a container and does not start a new slide/segment.
 
-  - They may **not appear freely**.
-  - They are only allowed if **embedded** inside:
+- Subheadings from `####` down to `######` are only allowed if **embedded** inside:
 
-    - an **HTML block** (`<div>…</div>`)
-    - a **list** (`-`, `*`)
-    - a **blockquote** (`>`)
+  - an **HTML block** (`<div>…</div>` or a semantic wrapper such as `<section>…</section>`)
+  - a **list** (`-`, `*`)
+  - a **blockquote** (`>`)
 
-- A “naked” subheading outside such containers counts as a new slide/segment and is therefore **not allowed**.
+- A “naked” `####`-or-deeper subheading outside such containers counts as a new slide/segment and is therefore **not allowed**.
 
 **Allowed patterns:**
 
 ```lia
 ## Slide 1
 
+### Bare subsection directly under the slide — no container needed
+
 <div>
-### Subsection inside an HTML block
-#### One level deeper
+#### One level deeper — must be embedded
 </div>
 ```
 
 ```lia
 ## Slide 2
 
-- List with content
-  - ### Subheading inside a list
-    #### One level deeper
+### Bare subsection — fine on its own
+
+<section>
+#### Subsection embedded in a semantic <section> wrapper
+</section>
 ```
 
 ```lia
 ## Slide 3
 
-> ### Subheading in a blockquote
-> #### Deeper level in the blockquote
+- List with content
+  - #### Subheading inside a list
 ```
-
-**Not allowed (outside of containers):**
 
 ```lia
 ## Slide 4
 
-### Subheading without container   ❌
-#### Even deeper without container ❌
+> #### Subheading in a blockquote
+```
+
+**Not allowed (`####`-or-deeper outside of containers):**
+
+```lia
+## Slide 5
+
+### Bare subsection — fine
+#### Subheading without container   ❌
 ```
 
 ---
@@ -6490,17 +6667,14 @@ workflow:
     - step: initial_publishing
       agent: development
       command: :create-project
-      output: project.yaml + .github/workflows/
+      output: "single-file: none (push + LiaScript viewer link) — multi-file: project.yaml + .github/workflows/"
       optional: true
       condition: user_requests_publishing AND first_time_setup AND project_validation == PASS
       notes: |
         Only when the instructor explicitly wants to publish AND `journal.md` → `## Validation` → `### Latest Validation Summary` shows `Mode: course` and `Result: PASS`.
-        Recommended when multiple materials exist and the course is ready to share.
-        - Generate project.yaml with all materials from materials/
-        - Apply visuals colors to project.yaml
-        - Create GitHub Actions workflow (force_orphan: true)
-        - Ask about GitHub Pages activation
-        - Commit and push to repository
+        Branches on `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`):
+        - single-file: no project.yaml, no GitHub Actions, no GitHub Pages — just commit and push README.md + assets/, then hand back the LiaScript live-viewer URL (https://liascript.github.io/course/?<raw-github-url>)
+        - multi-file: generate project.yaml with one card per session from materials/, apply visuals colors, create GitHub Actions workflow (force_orphan: true), ask about GitHub Pages activation, commit and push
 
     - step: update_publishing
       agent: development
@@ -6508,10 +6682,9 @@ workflow:
       optional: true
       condition: user_requests_publishing AND updates_to_existing_project
       notes: |
-        Only when the instructor explicitly wants to publish updates.
-        - Update project.yaml with new/changed materials
-        - Commit and push changes
-        - Trigger GitHub Pages workflow
+        Only when the instructor explicitly wants to publish updates. Branches the same way as :create-project:
+        - single-file: commit and push the changed README.md/assets/ — the existing viewer URL reflects the update automatically
+        - multi-file: update project.yaml with new/changed materials, commit and push, trigger the GitHub Pages workflow
 
     # Phase 7: Bundling (Optional)
     - step: assemble_bundle
@@ -6630,10 +6803,9 @@ workflow:
       Ready for publishing setup.
 
     publishing_complete: |
-      Course published:
-      - project.yaml configured
-      - GitHub Pages workflow active
-      - All materials live at: {{github_pages_url}}
+      Course published (see `data/file-structure-modes.md` for which path applied):
+      - single-file: pushed to GitHub; live at {{liascript_viewer_url}}
+      - multi-file: project.yaml configured, GitHub Pages workflow active, live at {{github_pages_url}}
 
   quick_reference:
     course_type_paths:

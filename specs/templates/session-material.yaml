@@ -4,7 +4,11 @@ template:
   version: 1.0
   output:
     format: markdown
-    filename: materials/{{number}}-{{type}}.md
+    filename: >
+      Resolved from `journal.md` → `## Course Context` → `__File Structure:__`
+      (see `data/file-structure-modes.md`): `materials/{{number}}-{{slug}}/README.md`
+      in multi-file mode, or the `##` chapter matching this session inside root
+      `README.md` in single-file mode.
   title: 'Session {{number}} ({{type | title}})'
   sections:
     - id: outline

@@ -11,19 +11,19 @@ Equivalent to BMAD's "Quick Flow" — minimal overhead for small, targeted chang
 - `number`: session number
 - `type`: session type (`lecture` or `exercise`)
 - `description`: what to fix (brief, e.g., "Typo in section 3", "Fix quiz syntax in slide 5", "Replace example for learning objective 2")
-- `materials/{number}-{type}.md` — the file to change
+- The material document to change — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode
 - `journal.md` → `## Course Context` — for conventions and terminology
 - `data/liascript-cheat-sheet.md` — for syntax reference if the fix involves LiaScript
 
 ## Output
 
-- Updated `materials/{number}-{type}.md` (single targeted change only)
+- Updated material document (single targeted change only)
 - Short inline confirmation of what was changed and PASS/FAIL of mini-validation
 
 ## Steps
 
 1. **Scope confirmation:** State what will be changed and the acceptance criterion:
-   - "I will [describe the change] in `materials/{number}-{type}.md`. The change is complete when [condition]. Correct? (Yes / Adjust scope)"
+   - "I will [describe the change] in [material document]. The change is complete when [condition]. Correct? (Yes / Adjust scope)"
 
 2. **Make the targeted change only** — no refactoring, no adjacent edits, no style improvements beyond the stated fix.
 

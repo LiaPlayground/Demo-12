@@ -10,6 +10,7 @@
 - [ ] Language & tone conventions set
 - [ ] Agenda flag correct (yes / no / optional)
 - [ ] Person (Sie / Du / you) set
+- [ ] File Structure mode declared (`single-file` / `multi-file`) and matches the actual materials layout on disk (see `data/file-structure-modes.md`)
 
 ## Outline
 
@@ -56,7 +57,7 @@
 - [ ] Overview table appears directly below `## Sessions`
 - [ ] All expected sessions have a row in the overview table
 - [ ] No session marked ✅ Skeleton without a matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
-- [ ] No session marked ✅ Material without a file in `materials/`
+- [ ] No session marked ✅ Material without its material document present (`materials/{number}-{slug}/README.md` in multi-file mode, or a matching `##` chapter in root `README.md` in single-file mode)
 - [ ] All sessions marked ✅ Done before publishing
 
 ## Session Subsections (`journal.md` → `## Sessions`)

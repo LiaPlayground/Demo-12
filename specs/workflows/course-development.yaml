@@ -290,17 +290,14 @@ workflow:
     - step: initial_publishing
       agent: development
       command: :create-project
-      output: project.yaml + .github/workflows/
+      output: "single-file: none (push + LiaScript viewer link) — multi-file: project.yaml + .github/workflows/"
       optional: true
       condition: user_requests_publishing AND first_time_setup AND project_validation == PASS
       notes: |
         Only when the instructor explicitly wants to publish AND `journal.md` → `## Validation` → `### Latest Validation Summary` shows `Mode: course` and `Result: PASS`.
-        Recommended when multiple materials exist and the course is ready to share.
-        - Generate project.yaml with all materials from materials/
-        - Apply visuals colors to project.yaml
-        - Create GitHub Actions workflow (force_orphan: true)
-        - Ask about GitHub Pages activation
-        - Commit and push to repository
+        Branches on `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`):
+        - single-file: no project.yaml, no GitHub Actions, no GitHub Pages — just commit and push README.md + assets/, then hand back the LiaScript live-viewer URL (https://liascript.github.io/course/?<raw-github-url>)
+        - multi-file: generate project.yaml with one card per session from materials/, apply visuals colors, create GitHub Actions workflow (force_orphan: true), ask about GitHub Pages activation, commit and push
 
     - step: update_publishing
       agent: development
@@ -308,10 +305,9 @@ workflow:
       optional: true
       condition: user_requests_publishing AND updates_to_existing_project
       notes: |
-        Only when the instructor explicitly wants to publish updates.
-        - Update project.yaml with new/changed materials
-        - Commit and push changes
-        - Trigger GitHub Pages workflow
+        Only when the instructor explicitly wants to publish updates. Branches the same way as :create-project:
+        - single-file: commit and push the changed README.md/assets/ — the existing viewer URL reflects the update automatically
+        - multi-file: update project.yaml with new/changed materials, commit and push, trigger the GitHub Pages workflow
 
     # Phase 7: Bundling (Optional)
     - step: assemble_bundle
@@ -430,10 +426,9 @@ workflow:
       Ready for publishing setup.
 
     publishing_complete: |
-      Course published:
-      - project.yaml configured
-      - GitHub Pages workflow active
-      - All materials live at: {{github_pages_url}}
+      Course published (see `data/file-structure-modes.md` for which path applied):
+      - single-file: pushed to GitHub; live at {{liascript_viewer_url}}
+      - multi-file: project.yaml configured, GitHub Pages workflow active, live at {{github_pages_url}}
 
   quick_reference:
     course_type_paths:
