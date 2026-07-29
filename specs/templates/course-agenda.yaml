@@ -16,7 +16,7 @@ template:
       template: >
         Each session includes:
 
-        - Title, duration, type (lecture/exercise)
+        - Title, duration, type (slug from `journal.md` → `## Didactics` → `__Session Types:__`, see `data/session-types.md`)
         - Learning objective(s), summary
         - Automatic materials path, resolved from `journal.md` → `## Course Context` →
           `__File Structure:__` (see `data/file-structure-modes.md`): a `##` chapter in

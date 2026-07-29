@@ -30,6 +30,14 @@ template:
       template: |
         * __Course Type:__
           [Type of course: introductory, advanced, practice-oriented, group work, self-learning — and what that means for pacing and learner autonomy.]
+    - id: session-types
+      title: Session Types
+      template: |
+        * __Session Types:__ (Format-Varianten einer {{sessions-called}} — siehe `data/session-types.md`)
+          1. __{{display name}}__ (slug: `{{slug}}`) — [one-line criterion: what makes a session this type]
+             Erforderlich: [2–3 concrete, checkable required elements]
+          2. __{{display name}}__ (slug: `{{slug}}`) — [one-line criterion]
+             Erforderlich: [2–3 concrete, checkable required elements]
     - id: difficulty-level
       title: Difficulty Level
       template: |

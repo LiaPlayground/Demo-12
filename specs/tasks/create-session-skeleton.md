@@ -8,7 +8,7 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 ## Inputs
 
 - number: session number
-- type: type of session (`lecture` or `exercise`)
+- type: session type slug, one of `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`)
 - title (optional)
 - Didactic concept from `journal.md` → `## Didactics`
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
@@ -25,6 +25,8 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 1. Collect session number, type, and optional title.
 2. Read `journal.md` → `## Course Context` for terminology and conventions.
 3. Adopt didactic concept and course type from Didactics.
+   - Look up the given type in `journal.md` → `## Didactics` → `__Session Types:__`. If it doesn't match a defined slug, stop and ask — do not invent a type on the fly.
+   - Note its `Erforderlich` (required elements) checklist; Activities/Content in step 5 must satisfy it.
 4. **Agent adopts the Coauthor role from `journal.md` → `## Agents` → `### Coauthor` into its own persona.**
    - From this step, the agent writes in the tone of the Coauthor role.
    - If the Coauthor role is missing or inactive, fall back to `journal.md` → `## Didactics` → `__Professor Persona:__`, `__Teaching Style:__`, and `__Persona Voice Sample:__`, then state that the Coauthor role should be synchronized into `## Agents`.

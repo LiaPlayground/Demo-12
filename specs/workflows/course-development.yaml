@@ -110,6 +110,7 @@ workflow:
         - Didactic concept and methods
         - Professor persona and style
         - Course type and difficulty level
+        - Session Types (slug, criterion, required elements — see data/session-types.md)
 
     # Phase 1b: Learner Personas (optional)
     - step: create_learner_personas
@@ -158,7 +159,7 @@ workflow:
         Build session structure (skipped for single-lesson):
         - Define all sessions/modules using terminology from course-context
         - Assign learning objectives per session
-        - Set duration and type (lecture/exercise)
+        - Set duration and type (slug from Didactics → Session Types, see data/session-types.md)
 
     - step: manage_templates
       agent: teaching

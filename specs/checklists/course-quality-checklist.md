@@ -29,6 +29,7 @@
 - [ ] Instructor persona defined (background, role, style)
 - [ ] Style & difficulty level specified
 - [ ] Course type consistent with `journal.md` → `## Course Context`
+- [ ] Session Types defined, each with slug, criterion, and required-elements checklist (see `data/session-types.md`)
 
 ## Templates `[if template imports or template macros are used]`
 
@@ -74,6 +75,7 @@
 - [ ] References included per section where claims are made
 - [ ] Didactic inputs from `journal.md` → `## Didactics` reflected (methods, learning phases)
 - [ ] Learning objectives from `journal.md` → `## Agenda` addressed in content
+- [ ] Each session's content satisfies its declared Session Type's `Erforderlich` checklist from `## Didactics` → `__Session Types:__`
 
 ## LiaScript Syntax (per material file)
 

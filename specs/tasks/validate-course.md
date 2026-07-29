@@ -52,6 +52,7 @@ Rules:
    - [ ] All learning objectives from `journal.md` → `## Agenda` for this session are addressed
    - [ ] No section is vague, content-free, or placeholder-only
    - [ ] References present where content claims are made
+   - [ ] Content satisfies the `Erforderlich` (required elements) checklist of this session's declared type in `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`). If the type has no required elements defined, flag this as a Session Types gap rather than skipping the check.
 
    **Persona & style checks:**
    - [ ] Tone matches the Coauthor role from `journal.md` → `## Agents` → `### Coauthor`
@@ -78,6 +79,7 @@ Rules:
    - Mode: session
    - Date
    - Content findings
+   - Type consistency findings
    - Persona & style findings
    - LiaScript syntax findings
    - Template findings, if applicable
@@ -99,7 +101,7 @@ Rules:
 4. **Check Context & Foundation:**
    - `journal.md` → `## Course Context` complete (course type, terminology, agenda flag, conventions)
    - `journal.md` → `## Outline`: title, target audience, time commitment `[not single-lesson]`, abstract, learning objectives
-   - `journal.md` → `## Didactics`: instructor persona, didactic concept, style, difficulty level
+   - `journal.md` → `## Didactics`: instructor persona, didactic concept, style, difficulty level, Session Types (each with slug, criterion, and required-elements checklist)
    - `journal.md` → `## Agents` exists and contains scoped `### Coauthor` and `### Learner Personas` containers
 
 4b. **Check Templates** `[if `journal.md` → `## Templates` exists or material files use template macros]`:

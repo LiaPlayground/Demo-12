@@ -16,7 +16,7 @@ or simply get a feel for how this learner experiences the material.
 
 - `{name}` — persona name (must exist in `journal.md` → `## Agents` → `### Learner Personas`)
 - `{number}` — session number
-- `{type}` — session type (`lecture` or `exercise`)
+- `{type}` — session type slug, one of `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`)
 - `materials/{number}-{type}.md` — the material to review
 - `journal.md` → `## Agents` → `### Learner Personas` → matching `#### Persona: {icon} {name}` only
 - `journal.md` → `## Agenda` — learning objectives for this session

@@ -3,7 +3,7 @@
 ## Purpose
 
 Creates the **Course Agenda** as a structured schedule for the course.  
-Defines sessions/modules with title, duration, type (lecture/exercise), learning objectives, summary, and the corresponding materials files.
+Defines sessions/modules with title, duration, type (slug from `journal.md` → `## Didactics` → `__Session Types:__`, see `data/session-types.md`), learning objectives, summary, and the corresponding materials files.
 **The agent also adopts the Coauthor role from `journal.md` → `## Agents` → `### Coauthor` into its own persona, so all content is written in this voice.**
 
 ## Inputs
@@ -12,6 +12,7 @@ Defines sessions/modules with title, duration, type (lecture/exercise), learning
 - Abstract from `journal.md` → `## Outline` (`__Abstract:__` bullet)
 - Time commitment from `journal.md` → `## Outline` (`__Time Commitment:__` bullet)
 - Didactic concept from `journal.md` → `## Didactics` (`__Didactic Concept:__` bullet)
+- Session Types from `journal.md` → `## Didactics` (`__Session Types:__` bullet, see `data/session-types.md`)
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
 - Style & difficulty level from `journal.md` → `## Didactics`
 - Course type from `journal.md` → `## Course Context`
@@ -41,7 +42,7 @@ Defines sessions/modules with title, duration, type (lecture/exercise), learning
 - If the Coauthor role is missing or inactive, fall back to `journal.md` → `## Didactics` → `__Professor Persona:__`, `__Teaching Style:__`, and `__Persona Voice Sample:__`, then state that the Coauthor role should be synchronized into `## Agents`.
 - All agenda descriptions reflect this style.
 
-5. Define sessions/modules using the terminology from `journal.md` → `## Course Context`.
+5. Define sessions/modules using the terminology from `journal.md` → `## Course Context`. Assign each one a type slug from `journal.md` → `## Didactics` → `__Session Types:__` — never a hardcoded `lecture`/`exercise`.
 6. Build the agenda in a structured form adapted to the pacing model:
    - **lecture-series**: sessions with time slots and weekly schedule
    - **workshop**: blocks with approximate time per block

@@ -27,6 +27,12 @@ template:
       template: |
         ##### Content
         - {{content_findings}}
+    - id: type-consistency
+      title: Type Consistency
+      template: |
+        ##### Type Consistency
+        - Session Type: {{type}} — Erforderlich (from `## Didactics` → `__Session Types:__`): {{required_elements}}
+        - {{type_consistency_findings}}
     - id: persona-style
       title: Persona & Style
       template: |

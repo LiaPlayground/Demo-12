@@ -9,7 +9,7 @@ Equivalent to BMAD's "Quick Flow" — minimal overhead for small, targeted chang
 ## Inputs
 
 - `number`: session number
-- `type`: session type (`lecture` or `exercise`)
+- `type`: session type slug, one of `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`)
 - `description`: what to fix (brief, e.g., "Typo in section 3", "Fix quiz syntax in slide 5", "Replace example for learning objective 2")
 - The material document to change — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode
 - `journal.md` → `## Course Context` — for conventions and terminology

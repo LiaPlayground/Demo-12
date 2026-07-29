@@ -1,0 +1,52 @@
+# Session Types
+
+> Read this before generating, validating, or referencing a session's `type`. Referenced by `:create-didactics`, `:create-session`, `:promote-session`, `:create-agenda`, `:quick-fix`, `:review-as-persona`, and `:validate-course`.
+
+A session's `type` is **not** a fixed global enum (`lecture` / `exercise`). It is a per-course vocabulary, defined once in `journal.md` → `## Didactics` → `__Session Types:__` by `:create-didactics`, and referenced by slug everywhere else.
+
+This is a different layer than `journal.md` → `## Course Context` → `__Terminology:__` (`sessions-called`, `lectures-called`): Terminology names the *unit* (e.g. "what do we call one session — a lesson, a block?"). Session Types names the *format that unit takes* (e.g. "is this particular lesson a lecture, an exercise, a self-check?"). A course can have one `sessions-called` term and several Session Types.
+
+## Definition format
+
+Each Session Type has four parts — a display name, a stable slug, a one-line criterion, and a short required-elements checklist:
+
+```
+* __Session Types:__
+  1. __Vorlesung__ (slug: `lecture`) — Dozentengeführte Wissensvermittlung, keine bewertete Aufgabe.
+     Erforderlich: Content-Abschnitt mit Erklärungsbogen; keine bewerteten Activities.
+  2. __Übung__ (slug: `exercise`) — Angeleitete Praxis.
+     Erforderlich: ≥1 konkrete Aufgabe in Activities, Musterlösung oder Feedback-Hinweis.
+```
+
+- **Display name** — free text, in the course's language/terminology.
+- **Slug** — short, stable, filename-safe (lowercase, no spaces). Computed once when the type is defined; do not rename later without checking existing file references (same rule as the session-folder slug in `data/file-structure-modes.md`).
+- **Criterion** — one sentence: what makes a session this type, not another.
+- **Erforderlich** (required elements) — 2–3 concrete, checkable items. This is what turns the type from a label into something `:validate-course` can actually check.
+
+## Default suggestions by course type
+
+`:create-didactics` proposes these as a starting point, not a fixed default — the instructor confirms or edits them, and must additionally name one planned session and its type as a grounding check (prevents rubber-stamping an unreflected default).
+
+| Course type | Suggested Session Types |
+|---|---|
+| lecture-series | **Vorlesung** (`lecture`) — dozentengeführt, keine bewertete Aufgabe · **Übung** (`exercise`) — angeleitete Praxis mit Aufgabe + Lösung/Feedback |
+| self-paced | **Modul** (`module`) — Selbststudieninhalt · **Selbstcheck** (`selfcheck`) — Lernkontrolle/Quiz |
+| workshop | **Input** (`input`) — kurzer Theorieblock · **Aktivität** (`activity`) — Gruppenarbeit/Hands-on mit Ergebnis |
+| single-lesson | Usually **one** type only (named after `lectures-called`); skip the discussion step unless the instructor wants to split the lesson into sub-types |
+
+## Where the slug is used
+
+- `journal.md` → `## Sessions` overview table `Type` column, and `**Type:** {slug}` inside each session subsection
+- `journal.md` → `## Agenda` sessions table `Type` column
+- `:create-session`, `:promote-session`, `:quick-fix`, `:review-as-persona` — the `type` input parameter is one of the slugs defined here, not a hardcoded `lecture`/`exercise`
+- Material/asset paths where the pattern includes `{type}` — always the slug, never the display name
+
+## Enforcement loop
+
+A Session Type's `Erforderlich` checklist is not documentation-only — it closes a loop across three tasks:
+
+1. **Generation** — `:create-session` and `:promote-session` fill Activities/Content so the required elements are present for the chosen type.
+2. **Validation** — `:validate-course` (session and course mode) checks the material against its type's required elements as part of the Content checks, and records the result in `templates/session-validation.yaml` → `type-consistency`.
+3. **Course-level check** — `checklists/course-quality-checklist.md` confirms every session's content matches its declared type's required elements before publishing.
+
+If a session's type has no required elements defined, `:validate-course` flags this as a gap in the Session Types definition rather than silently skipping the check.

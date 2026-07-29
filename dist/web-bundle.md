@@ -1000,7 +1000,7 @@ rewrite, summarize, or infer settings from sibling agent subsections.
 ## Purpose
 
 Creates the **Course Agenda** as a structured schedule for the course.  
-Defines sessions/modules with title, duration, type (lecture/exercise), learning objectives, summary, and the corresponding materials files.
+Defines sessions/modules with title, duration, type (slug from `journal.md` → `## Didactics` → `__Session Types:__`, see `data/session-types.md`), learning objectives, summary, and the corresponding materials files.
 **The agent also adopts the Coauthor role from `journal.md` → `## Agents` → `### Coauthor` into its own persona, so all content is written in this voice.**
 
 ## Inputs
@@ -1009,6 +1009,7 @@ Defines sessions/modules with title, duration, type (lecture/exercise), learning
 - Abstract from `journal.md` → `## Outline` (`__Abstract:__` bullet)
 - Time commitment from `journal.md` → `## Outline` (`__Time Commitment:__` bullet)
 - Didactic concept from `journal.md` → `## Didactics` (`__Didactic Concept:__` bullet)
+- Session Types from `journal.md` → `## Didactics` (`__Session Types:__` bullet, see `data/session-types.md`)
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
 - Style & difficulty level from `journal.md` → `## Didactics`
 - Course type from `journal.md` → `## Course Context`
@@ -1038,7 +1039,7 @@ Defines sessions/modules with title, duration, type (lecture/exercise), learning
 - If the Coauthor role is missing or inactive, fall back to `journal.md` → `## Didactics` → `__Professor Persona:__`, `__Teaching Style:__`, and `__Persona Voice Sample:__`, then state that the Coauthor role should be synchronized into `## Agents`.
 - All agenda descriptions reflect this style.
 
-5. Define sessions/modules using the terminology from `journal.md` → `## Course Context`.
+5. Define sessions/modules using the terminology from `journal.md` → `## Course Context`. Assign each one a type slug from `journal.md` → `## Didactics` → `__Session Types:__` — never a hardcoded `lecture`/`exercise`.
 6. Build the agenda in a structured form adapted to the pacing model:
    - **lecture-series**: sessions with time slots and weekly schedule
    - **workshop**: blocks with approximate time per block
@@ -1070,7 +1071,7 @@ Builds on the outline to ensure a consistent teaching strategy aligned with the 
 
 ## Output
 
-- `journal.md` → `## Didactics`
+- `journal.md` → `## Didactics`, including `__Session Types:__`
 - `journal.md` → `## Agents` → `### Coauthor` updated with the coauthor role derived from the professor persona, teaching style, project-specific rules, and persona voice sample
 - Structure based on `templates/course-didactics.yaml`
 
@@ -1083,6 +1084,10 @@ Builds on the outline to ensure a consistent teaching strategy aligned with the 
    - **self-paced**: modular, learner-driven, self-check oriented
    - **workshop**: activity-driven, collaborative, time-boxed
    - **single-lesson**: focused, compact, single arc
+3b. Define `__Session Types:__` (see `data/session-types.md` for the full mechanism):
+   - **single-lesson**: default to one type named after `lectures-called`; skip the discussion unless the instructor wants to split the lesson into sub-types.
+   - **all other course types**: 🎛️ propose the default Session Types for this course type from the table in `data/session-types.md`, each with slug, one-line criterion, and a 2–3 item required-elements checklist. Let the instructor confirm or edit.
+   - 💬 Grounding check (mandatory, do not skip): ask the instructor to name one concretely planned session and which Session Type it would get, and why. If the answer doesn't fit any proposed type, revise the types before continuing — don't let an unfitting default stand.
 4. 💬 Describe the instructor persona (expertise, role, background) — free text, discuss with instructor.
 5. 🎛️ Define teaching style (structured question — single choice with optional free-text addition):
    - humorous / academic / practical / conversational / mixed
@@ -1623,7 +1628,7 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 ## Inputs
 
 - number: session number
-- type: type of session (`lecture` or `exercise`)
+- type: session type slug, one of `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`)
 - title (optional)
 - Didactic concept from `journal.md` → `## Didactics`
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
@@ -1640,6 +1645,8 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 1. Collect session number, type, and optional title.
 2. Read `journal.md` → `## Course Context` for terminology and conventions.
 3. Adopt didactic concept and course type from Didactics.
+   - Look up the given type in `journal.md` → `## Didactics` → `__Session Types:__`. If it doesn't match a defined slug, stop and ask — do not invent a type on the fly.
+   - Note its `Erforderlich` (required elements) checklist; Activities/Content in step 5 must satisfy it.
 4. **Agent adopts the Coauthor role from `journal.md` → `## Agents` → `### Coauthor` into its own persona.**
    - From this step, the agent writes in the tone of the Coauthor role.
    - If the Coauthor role is missing or inactive, fall back to `journal.md` → `## Didactics` → `__Professor Persona:__`, `__Teaching Style:__`, and `__Persona Voice Sample:__`, then state that the Coauthor role should be synchronized into `## Agents`.
@@ -2257,7 +2264,7 @@ Converts a **Session** into a detailed **Session Material**.
 
 ## Inputs
 
-- number, type
+- number, type (session type slug from `journal.md` → `## Didactics` → `__Session Types:__`, see `data/session-types.md`)
 - skeleton: matching `### {number}. {title}` subsection from `journal.md` → `## Sessions`
 - didactics: content from `journal.md` → `## Didactics`
 - agenda: content from `journal.md` → `## Agenda`
@@ -2278,6 +2285,7 @@ Converts a **Session** into a detailed **Session Material**.
 1. Load the matching skeleton subsection from `journal.md` → `## Sessions`.
 2. Read `journal.md` → `## Course Context` for terminology and conventions.
 3. Adopt didactic concept and course type from Didactics.
+   - Look up the session's type in `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`) and note its `Erforderlich` (required elements) checklist; the generated outline in step 7 must satisfy it.
 4. **Agent adopts the Coauthor role from `journal.md` → `## Agents` → `### Coauthor` into its own persona.**
    - From this step, the agent writes in the tone of the Coauthor role.
    - If the Coauthor role is missing or inactive, fall back to `journal.md` → `## Didactics` → `__Professor Persona:__`, `__Teaching Style:__`, and `__Persona Voice Sample:__`, then state that the Coauthor role should be synchronized into `## Agents`.
@@ -2309,7 +2317,7 @@ Equivalent to BMAD's "Quick Flow" — minimal overhead for small, targeted chang
 ## Inputs
 
 - `number`: session number
-- `type`: session type (`lecture` or `exercise`)
+- `type`: session type slug, one of `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`)
 - `description`: what to fix (brief, e.g., "Typo in section 3", "Fix quiz syntax in slide 5", "Replace example for learning objective 2")
 - The material document to change — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode
 - `journal.md` → `## Course Context` — for conventions and terminology
@@ -2377,7 +2385,7 @@ or simply get a feel for how this learner experiences the material.
 
 - `{name}` — persona name (must exist in `journal.md` → `## Agents` → `### Learner Personas`)
 - `{number}` — session number
-- `{type}` — session type (`lecture` or `exercise`)
+- `{type}` — session type slug, one of `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`)
 - `materials/{number}-{type}.md` — the material to review
 - `journal.md` → `## Agents` → `### Learner Personas` → matching `#### Persona: {icon} {name}` only
 - `journal.md` → `## Agenda` — learning objectives for this session
@@ -3047,6 +3055,7 @@ Rules:
    - [ ] All learning objectives from `journal.md` → `## Agenda` for this session are addressed
    - [ ] No section is vague, content-free, or placeholder-only
    - [ ] References present where content claims are made
+   - [ ] Content satisfies the `Erforderlich` (required elements) checklist of this session's declared type in `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`). If the type has no required elements defined, flag this as a Session Types gap rather than skipping the check.
 
    **Persona & style checks:**
    - [ ] Tone matches the Coauthor role from `journal.md` → `## Agents` → `### Coauthor`
@@ -3073,6 +3082,7 @@ Rules:
    - Mode: session
    - Date
    - Content findings
+   - Type consistency findings
    - Persona & style findings
    - LiaScript syntax findings
    - Template findings, if applicable
@@ -3094,7 +3104,7 @@ Rules:
 4. **Check Context & Foundation:**
    - `journal.md` → `## Course Context` complete (course type, terminology, agenda flag, conventions)
    - `journal.md` → `## Outline`: title, target audience, time commitment `[not single-lesson]`, abstract, learning objectives
-   - `journal.md` → `## Didactics`: instructor persona, didactic concept, style, difficulty level
+   - `journal.md` → `## Didactics`: instructor persona, didactic concept, style, difficulty level, Session Types (each with slug, criterion, and required-elements checklist)
    - `journal.md` → `## Agents` exists and contains scoped `### Coauthor` and `### Learner Personas` containers
 
 4b. **Check Templates** `[if `journal.md` → `## Templates` exists or material files use template macros]`:
@@ -3288,7 +3298,7 @@ template:
       template: >
         Each session includes:
 
-        - Title, duration, type (lecture/exercise)
+        - Title, duration, type (slug from `journal.md` → `## Didactics` → `__Session Types:__`, see `data/session-types.md`)
         - Learning objective(s), summary
         - Automatic materials path, resolved from `journal.md` → `## Course Context` →
           `__File Structure:__` (see `data/file-structure-modes.md`): a `##` chapter in
@@ -3397,6 +3407,14 @@ template:
       template: |
         * __Course Type:__
           [Type of course: introductory, advanced, practice-oriented, group work, self-learning — and what that means for pacing and learner autonomy.]
+    - id: session-types
+      title: Session Types
+      template: |
+        * __Session Types:__ (Format-Varianten einer {{sessions-called}} — siehe `data/session-types.md`)
+          1. __{{display name}}__ (slug: `{{slug}}`) — [one-line criterion: what makes a session this type]
+             Erforderlich: [2–3 concrete, checkable required elements]
+          2. __{{display name}}__ (slug: `{{slug}}`) — [one-line criterion]
+             Erforderlich: [2–3 concrete, checkable required elements]
     - id: difficulty-level
       title: Difficulty Level
       template: |
@@ -3784,6 +3802,10 @@ _Filled by `:create-didactics` from `templates/course-didactics.yaml`._
 * __Course Type:__
   {{introductory, advanced, practice-oriented, group work, self-learning}}
 
+* __Session Types:__ (Format-Varianten einer {{sessions-called}} — siehe `data/session-types.md`)
+  1. __{{display name}}__ (slug: `{{slug}}`) — {{one-line criterion}}
+     Erforderlich: {{2–3 required elements}}
+
 * __Difficulty Level:__
   {{beginner | intermediate | advanced}}
 
@@ -3879,7 +3901,7 @@ _Filled by `:create-agenda` from `templates/course-agenda.yaml` (skip if the cou
 
   | # | Title | Type | Duration | Learning Objective | Material |
   |---|-------|------|----------|--------------------|----------|
-  | 1 | {{title}} | {{lecture | exercise | ...}} | {{duration}} | {{objective}} | {{material path — resolved from `## Course Context` → `__File Structure:__`; see `data/file-structure-modes.md`}} |
+  | 1 | {{title}} | {{slug from `## Didactics` → `__Session Types:__`}} | {{duration}} | {{objective}} | {{material path — resolved from `## Course Context` → `__File Structure:__`; see `data/file-structure-modes.md`}} |
 
 ---
 
@@ -3894,7 +3916,7 @@ _Managed by `:create-session`, `:promote-session`, `:coauthor-materials`, and `:
 
 ### {{n}}. {{Session Title}}
 
-**Type:** {{lecture | exercise | ...}}
+**Type:** {{slug from `## Didactics` → `__Session Types:__`}}
 
 **Summary:**
 
@@ -4224,6 +4246,7 @@ template:
       in multi-file mode, or the `##` chapter matching this session inside root
       `README.md` in single-file mode.
   title: 'Session {{number}} ({{type | title}})'
+  note: '{{type}} is a slug from `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`). Structure the outline below so it satisfies that type''s `Erforderlich` checklist.'
   sections:
     - id: outline
       title: Planned Outline
@@ -4277,6 +4300,7 @@ template:
       title: Type
       template: |
         **Type:** {{type}}
+      note: '{{type}} is a slug from `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`) — never a hardcoded `lecture`/`exercise`. Fill Activities/Content below so they satisfy that type''s `Erforderlich` checklist.'
     - id: summary
       title: Summary
       template: |
@@ -4345,6 +4369,12 @@ template:
       template: |
         ##### Content
         - {{content_findings}}
+    - id: type-consistency
+      title: Type Consistency
+      template: |
+        ##### Type Consistency
+        - Session Type: {{type}} — Erforderlich (from `## Didactics` → `__Session Types:__`): {{required_elements}}
+        - {{type_consistency_findings}}
     - id: persona-style
       title: Persona & Style
       template: |
@@ -4494,6 +4524,7 @@ template:
 - [ ] Instructor persona defined (background, role, style)
 - [ ] Style & difficulty level specified
 - [ ] Course type consistent with `journal.md` → `## Course Context`
+- [ ] Session Types defined, each with slug, criterion, and required-elements checklist (see `data/session-types.md`)
 
 ## Templates `[if template imports or template macros are used]`
 
@@ -4539,6 +4570,7 @@ template:
 - [ ] References included per section where claims are made
 - [ ] Didactic inputs from `journal.md` → `## Didactics` reflected (methods, learning phases)
 - [ ] Learning objectives from `journal.md` → `## Agenda` addressed in content
+- [ ] Each session's content satisfies its declared Session Type's `Erforderlich` checklist from `## Didactics` → `__Session Types:__`
 
 ## LiaScript Syntax (per material file)
 
@@ -6317,10 +6349,12 @@ meta:
   description: A collection of interactive educational materials
 
 collection:
-  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/1-lecture.md
-  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/2-lecture.md
-  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/3-exercise.md
+  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/1-session-slug/README.md
+  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/2-session-slug/README.md
+  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/3-session-slug/README.md
 ```
+
+(`{number}-{slug}` from the session title — see `data/file-structure-modes.md`. The session's *type*, e.g. lecture/exercise, is a separate concern defined in `## Didactics` → `__Session Types:__`, see `data/session-types.md`, and does not appear in the path.)
 
 ---
 
@@ -6370,6 +6404,64 @@ collection:
 *Sources: [Automating LiaScript Transformations](https://liascript.github.io/blog/automating-liascript-transformations-on-github/), [Quality Checks](https://liascript.github.io/blog/quality-checks-on-liascript-with-github-ensuring-document-excellence/), [Creating Project Websites](https://liascript.github.io/blog/creating-project-websites-with-liascript-exporter/), [@liascript/exporter on npm](https://www.npmjs.com/package/@liascript/exporter) — Retrieved April 2026*
 
 ==================== END: specs/data/liascript-workflows.md ====================
+
+
+==================== START: specs/data/session-types.md ====================
+
+# Session Types
+
+> Read this before generating, validating, or referencing a session's `type`. Referenced by `:create-didactics`, `:create-session`, `:promote-session`, `:create-agenda`, `:quick-fix`, `:review-as-persona`, and `:validate-course`.
+
+A session's `type` is **not** a fixed global enum (`lecture` / `exercise`). It is a per-course vocabulary, defined once in `journal.md` → `## Didactics` → `__Session Types:__` by `:create-didactics`, and referenced by slug everywhere else.
+
+This is a different layer than `journal.md` → `## Course Context` → `__Terminology:__` (`sessions-called`, `lectures-called`): Terminology names the *unit* (e.g. "what do we call one session — a lesson, a block?"). Session Types names the *format that unit takes* (e.g. "is this particular lesson a lecture, an exercise, a self-check?"). A course can have one `sessions-called` term and several Session Types.
+
+## Definition format
+
+Each Session Type has four parts — a display name, a stable slug, a one-line criterion, and a short required-elements checklist:
+
+```
+* __Session Types:__
+  1. __Vorlesung__ (slug: `lecture`) — Dozentengeführte Wissensvermittlung, keine bewertete Aufgabe.
+     Erforderlich: Content-Abschnitt mit Erklärungsbogen; keine bewerteten Activities.
+  2. __Übung__ (slug: `exercise`) — Angeleitete Praxis.
+     Erforderlich: ≥1 konkrete Aufgabe in Activities, Musterlösung oder Feedback-Hinweis.
+```
+
+- **Display name** — free text, in the course's language/terminology.
+- **Slug** — short, stable, filename-safe (lowercase, no spaces). Computed once when the type is defined; do not rename later without checking existing file references (same rule as the session-folder slug in `data/file-structure-modes.md`).
+- **Criterion** — one sentence: what makes a session this type, not another.
+- **Erforderlich** (required elements) — 2–3 concrete, checkable items. This is what turns the type from a label into something `:validate-course` can actually check.
+
+## Default suggestions by course type
+
+`:create-didactics` proposes these as a starting point, not a fixed default — the instructor confirms or edits them, and must additionally name one planned session and its type as a grounding check (prevents rubber-stamping an unreflected default).
+
+| Course type | Suggested Session Types |
+|---|---|
+| lecture-series | **Vorlesung** (`lecture`) — dozentengeführt, keine bewertete Aufgabe · **Übung** (`exercise`) — angeleitete Praxis mit Aufgabe + Lösung/Feedback |
+| self-paced | **Modul** (`module`) — Selbststudieninhalt · **Selbstcheck** (`selfcheck`) — Lernkontrolle/Quiz |
+| workshop | **Input** (`input`) — kurzer Theorieblock · **Aktivität** (`activity`) — Gruppenarbeit/Hands-on mit Ergebnis |
+| single-lesson | Usually **one** type only (named after `lectures-called`); skip the discussion step unless the instructor wants to split the lesson into sub-types |
+
+## Where the slug is used
+
+- `journal.md` → `## Sessions` overview table `Type` column, and `**Type:** {slug}` inside each session subsection
+- `journal.md` → `## Agenda` sessions table `Type` column
+- `:create-session`, `:promote-session`, `:quick-fix`, `:review-as-persona` — the `type` input parameter is one of the slugs defined here, not a hardcoded `lecture`/`exercise`
+- Material/asset paths where the pattern includes `{type}` — always the slug, never the display name
+
+## Enforcement loop
+
+A Session Type's `Erforderlich` checklist is not documentation-only — it closes a loop across three tasks:
+
+1. **Generation** — `:create-session` and `:promote-session` fill Activities/Content so the required elements are present for the chosen type.
+2. **Validation** — `:validate-course` (session and course mode) checks the material against its type's required elements as part of the Content checks, and records the result in `templates/session-validation.yaml` → `type-consistency`.
+3. **Course-level check** — `checklists/course-quality-checklist.md` confirms every session's content matches its declared type's required elements before publishing.
+
+If a session's type has no required elements defined, `:validate-course` flags this as a gap in the Session Types definition rather than silently skipping the check.
+
+==================== END: specs/data/session-types.md ====================
 
 
 ==================== START: specs/workflows/course-development.yaml ====================
@@ -6487,6 +6579,7 @@ workflow:
         - Didactic concept and methods
         - Professor persona and style
         - Course type and difficulty level
+        - Session Types (slug, criterion, required elements — see data/session-types.md)
 
     # Phase 1b: Learner Personas (optional)
     - step: create_learner_personas
@@ -6535,7 +6628,7 @@ workflow:
         Build session structure (skipped for single-lesson):
         - Define all sessions/modules using terminology from course-context
         - Assign learning objectives per session
-        - Set duration and type (lecture/exercise)
+        - Set duration and type (slug from Didactics → Session Types, see data/session-types.md)
 
     - step: manage_templates
       agent: teaching

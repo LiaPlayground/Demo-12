@@ -251,6 +251,10 @@ _Filled by `:create-didactics` from `templates/course-didactics.yaml`._
 * __Course Type:__
   {{introductory, advanced, practice-oriented, group work, self-learning}}
 
+* __Session Types:__ (Format-Varianten einer {{sessions-called}} — siehe `data/session-types.md`)
+  1. __{{display name}}__ (slug: `{{slug}}`) — {{one-line criterion}}
+     Erforderlich: {{2–3 required elements}}
+
 * __Difficulty Level:__
   {{beginner | intermediate | advanced}}
 
@@ -346,7 +350,7 @@ _Filled by `:create-agenda` from `templates/course-agenda.yaml` (skip if the cou
 
   | # | Title | Type | Duration | Learning Objective | Material |
   |---|-------|------|----------|--------------------|----------|
-  | 1 | {{title}} | {{lecture | exercise | ...}} | {{duration}} | {{objective}} | {{material path — resolved from `## Course Context` → `__File Structure:__`; see `data/file-structure-modes.md`}} |
+  | 1 | {{title}} | {{slug from `## Didactics` → `__Session Types:__`}} | {{duration}} | {{objective}} | {{material path — resolved from `## Course Context` → `__File Structure:__`; see `data/file-structure-modes.md`}} |
 
 ---
 
@@ -361,7 +365,7 @@ _Managed by `:create-session`, `:promote-session`, `:coauthor-materials`, and `:
 
 ### {{n}}. {{Session Title}}
 
-**Type:** {{lecture | exercise | ...}}
+**Type:** {{slug from `## Didactics` → `__Session Types:__`}}
 
 **Summary:**
 

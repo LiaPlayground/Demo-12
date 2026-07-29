@@ -952,10 +952,12 @@ meta:
   description: A collection of interactive educational materials
 
 collection:
-  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/1-lecture.md
-  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/2-lecture.md
-  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/3-exercise.md
+  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/1-session-slug/README.md
+  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/2-session-slug/README.md
+  - url: https://raw.githubusercontent.com/USERNAME/REPO/main/materials/3-session-slug/README.md
 ```
+
+(`{number}-{slug}` from the session title — see `data/file-structure-modes.md`. The session's *type*, e.g. lecture/exercise, is a separate concern defined in `## Didactics` → `__Session Types:__`, see `data/session-types.md`, and does not appear in the path.)
 
 ---
 

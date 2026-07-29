@@ -15,7 +15,7 @@ Builds on the outline to ensure a consistent teaching strategy aligned with the 
 
 ## Output
 
-- `journal.md` → `## Didactics`
+- `journal.md` → `## Didactics`, including `__Session Types:__`
 - `journal.md` → `## Agents` → `### Coauthor` updated with the coauthor role derived from the professor persona, teaching style, project-specific rules, and persona voice sample
 - Structure based on `templates/course-didactics.yaml`
 
@@ -28,6 +28,10 @@ Builds on the outline to ensure a consistent teaching strategy aligned with the 
    - **self-paced**: modular, learner-driven, self-check oriented
    - **workshop**: activity-driven, collaborative, time-boxed
    - **single-lesson**: focused, compact, single arc
+3b. Define `__Session Types:__` (see `data/session-types.md` for the full mechanism):
+   - **single-lesson**: default to one type named after `lectures-called`; skip the discussion unless the instructor wants to split the lesson into sub-types.
+   - **all other course types**: 🎛️ propose the default Session Types for this course type from the table in `data/session-types.md`, each with slug, one-line criterion, and a 2–3 item required-elements checklist. Let the instructor confirm or edit.
+   - 💬 Grounding check (mandatory, do not skip): ask the instructor to name one concretely planned session and which Session Type it would get, and why. If the answer doesn't fit any proposed type, revise the types before continuing — don't let an unfitting default stand.
 4. 💬 Describe the instructor persona (expertise, role, background) — free text, discuss with instructor.
 5. 🎛️ Define teaching style (structured question — single choice with optional free-text addition):
    - humorous / academic / practical / conversational / mixed
