@@ -16,6 +16,8 @@ Defines sessions/modules with title, duration, type (slug from `journal.md` → 
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
 - Style & difficulty level from `journal.md` → `## Didactics`
 - Course type from `journal.md` → `## Course Context`
+- Default Session Method from `journal.md` → `## Didactics` → `__Default Session Method:__` (see `data/didactic-methods.md`)
+- `data/duration-heuristic.md` — optional orientation when estimating realistic per-session durations (not a required check at this stage)
 
 ## Output
 
@@ -43,11 +45,14 @@ Defines sessions/modules with title, duration, type (slug from `journal.md` → 
 - All agenda descriptions reflect this style.
 
 5. Define sessions/modules using the terminology from `journal.md` → `## Course Context`. Assign each one a type slug from `journal.md` → `## Didactics` → `__Session Types:__` — never a hardcoded `lecture`/`exercise`.
+   - `[if journal.md → ## Didactics → __Default Session Method:__ is not "none"]`: assign each session the default Session Method, pre-selected. 🎛️ Ask per session whether a different method from `data/didactic-methods.md` fits better for that specific session — keep the default unless the instructor picks something else. Do not ask this at all when the default is `none`.
 6. Build the agenda in a structured form adapted to the pacing model:
    - **lecture-series**: sessions with time slots and weekly schedule
    - **workshop**: blocks with approximate time per block
    - **self-paced**: modules without fixed time slots, estimated duration only
    - **single-lesson** (if agenda is yes): sections/chapters within the lesson, no time slots
+
+   When assigning a duration, `data/duration-heuristic.md` can help sanity-check that it's realistic for the planned content volume — this is orientation only, not a required check here (the actual check happens later in `:validate-course`).
 7. Fill the `templates/course-agenda.yaml` template with the results.
 8. Save the generated agenda by replacing the content of `journal.md` → `## Agenda` — flat `* __Label:__` bullets plus the sessions table, no sub-headings.
 9. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.

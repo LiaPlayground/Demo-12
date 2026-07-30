@@ -30,6 +30,16 @@ template:
       template: |
         * __Course Type:__
           [Type of course: introductory, advanced, practice-oriented, group work, self-learning — and what that means for pacing and learner autonomy.]
+    - id: didactic-framework
+      title: Didactic Framework
+      template: |
+        * __Didactic Framework:__ {{framework name}} (see `data/didactic-methods.md`)
+          [One line: why this framework fits this course.]
+    - id: default-session-method
+      title: Default Session Method
+      template: |
+        * __Default Session Method:__ {{method name (slug: `{{slug}}`) or `none`}} (see `data/didactic-methods.md`)
+          [One line: why this method fits this course, or why no specific method was chosen.]
     - id: session-types
       title: Session Types
       template: |

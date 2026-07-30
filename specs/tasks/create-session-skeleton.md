@@ -14,6 +14,7 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
 - Style, difficulty level, and didactic concept from `journal.md` → `## Didactics`
 - Terminology from `journal.md` → `## Course Context` (sessions-called, lectures-called)
+- Default Session Method from `journal.md` → `## Didactics` → `__Default Session Method:__`, and the matching session's Method column in `journal.md` → `## Agenda` if an agenda exists (see `data/didactic-methods.md`)
 
 ## Output
 
@@ -27,6 +28,7 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 3. Adopt didactic concept and course type from Didactics.
    - Look up the given type in `journal.md` → `## Didactics` → `__Session Types:__`. If it doesn't match a defined slug, stop and ask — do not invent a type on the fly.
    - Note its `Erforderlich` (required elements) checklist; Activities/Content in step 5 must satisfy it.
+   - Resolve the session's Method: if `journal.md` → `## Agenda` exists and has a Method column, use this session's value from there; otherwise use `journal.md` → `## Didactics` → `__Default Session Method:__`. If that default is `none`, skip Method entirely — no line is stored, no checklist applies. Note the method's `Erforderlich` checklist from `data/didactic-methods.md`, independently of the Type checklist above.
 4. **Agent adopts the Coauthor role from `journal.md` → `## Agents` → `### Coauthor` into its own persona.**
    - From this step, the agent writes in the tone of the Coauthor role.
    - If the Coauthor role is missing or inactive, fall back to `journal.md` → `## Didactics` → `__Professor Persona:__`, `__Teaching Style:__`, and `__Persona Voice Sample:__`, then state that the Coauthor role should be synchronized into `## Agents`.
@@ -40,17 +42,18 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 
    - Store the session type as its own line: `**Type:** {type}`.
    - Do not include the type in the subsection heading.
+   - If a Method was resolved (step 3): store it as its own line directly after `**Type:**`: `**Method:** {method}`. Omit this line entirely if the resolved default is `none`.
    - `**Summary:**` and `**Content:**` are free text blocks and may contain more than one paragraph.
    - `**Activities:**` must be a numbered list.
    - `**References:**` must be a numbered list.
    - End the subsection with an empty `#### Images` block (placeholder note); it is later filled by `:create-image` and rendered by `:generate-image`.
 8. Update the overview table inside `journal.md` → `## Sessions`:
-   - If `journal.md` → `## Sessions` does not exist yet, create it with the overview table first:
+   - If `journal.md` → `## Sessions` does not exist yet, create it with the overview table first. Include a `Method` column only if `journal.md` → `## Didactics` → `__Default Session Method:__` is not `none`:
      ```
-     | # | Title | Type | Skeleton | Material | Done | Notes |
-     |---|---|---|---|---|---|---|
+     | # | Title | Type | Method | Skeleton | Material | Done | Notes |
+     |---|---|---|---|---|---|---|---|
      ```
-   - Add a new row: `| {number} | {title} | {type} | ✅ | ❌ | ❌ | |`
+   - Add a new row: `| {number} | {title} | {type} | {method} | ✅ | ❌ | ❌ | |` (omit the Method column entirely, matching the table header, if no method is in use)
    - If a row for this session already exists, update the Skeleton column to ✅.
    - Keep the overview table before all `### {number}. {title}` subsections.
 9. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.

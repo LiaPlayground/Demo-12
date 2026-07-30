@@ -17,6 +17,7 @@ template:
         Each session includes:
 
         - Title, duration, type (slug from `journal.md` → `## Didactics` → `__Session Types:__`, see `data/session-types.md`)
+        - Method (slug from `data/didactic-methods.md` → "Session Methods"; defaults to `journal.md` → `## Didactics` → `__Default Session Method:__`, can be overridden per session — omitted entirely if the default is `none`)
         - Learning objective(s), summary
         - Automatic materials path, resolved from `journal.md` → `## Course Context` →
           `__File Structure:__` (see `data/file-structure-modes.md`): a `##` chapter in

@@ -12,6 +12,7 @@ Builds on the outline to ensure a consistent teaching strategy aligned with the 
 - Target audience from `journal.md` → `## Outline`
 - Learning objectives from `journal.md` → `## Outline`
 - Course type & conventions from `journal.md` → `## Course Context`
+- `data/didactic-methods.md` — course frameworks, session methods, and their default suggestions by course type
 
 ## Output
 
@@ -28,10 +29,12 @@ Builds on the outline to ensure a consistent teaching strategy aligned with the 
    - **self-paced**: modular, learner-driven, self-check oriented
    - **workshop**: activity-driven, collaborative, time-boxed
    - **single-lesson**: focused, compact, single arc
+3a. 🎛️ Propose a **Didactic Framework** from `data/didactic-methods.md` → "Course Frameworks", based on course type. Let the instructor confirm or change it. This is documentation/vocabulary only — it does not change any later step's behavior.
 3b. Define `__Session Types:__` (see `data/session-types.md` for the full mechanism):
    - **single-lesson**: default to one type named after `lectures-called`; skip the discussion unless the instructor wants to split the lesson into sub-types.
    - **all other course types**: 🎛️ propose the default Session Types for this course type from the table in `data/session-types.md`, each with slug, one-line criterion, and a 2–3 item required-elements checklist. Let the instructor confirm or edit.
    - 💬 Grounding check (mandatory, do not skip): ask the instructor to name one concretely planned session and which Session Type it would get, and why. If the answer doesn't fit any proposed type, revise the types before continuing — don't let an unfitting default stand.
+3c. 🎛️ Propose a **Default Session Method** from `data/didactic-methods.md` → "Session Methods", based on course type — include the option to pick **`none`** (no specific method, opt out entirely). Let the instructor confirm, change, or opt out. This becomes the course-wide default; `:create-agenda` can override it per session later.
 4. 💬 Describe the instructor persona (expertise, role, background) — free text, discuss with instructor.
 5. 🎛️ Define teaching style (structured question — single choice with optional free-text addition):
    - humorous / academic / practical / conversational / mixed

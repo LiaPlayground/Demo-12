@@ -13,7 +13,9 @@ Can be run in two modes:
 - `journal.md` → `## Course Context` — course type and conventions
 - `journal.md` → `## Templates` — LiaScript template imports, macros, and examples (if present)
 - `checklists/course-quality-checklist.md` — structured checklist
-- `data/liascript-cheat-sheet.md` — syntax reference for LiaScript checks
+- `tasks/validate-syntax.md` — full LiaScript syntax check, called as a sub-procedure (single source of truth for syntax rules)
+- `data/duration-heuristic.md` — reading time + activity time estimate, compared against the declared duration
+- `data/didactic-methods.md` — Session Method `Erforderlich` checklists, if a session method is in use
 - `templates/session-validation.yaml` — template for each stored session validation report
 - File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
 - For session mode: the material document for this session (resolved per File Structure mode), matching overview row in `journal.md` → `## Sessions`, and matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
@@ -53,19 +55,15 @@ Rules:
    - [ ] No section is vague, content-free, or placeholder-only
    - [ ] References present where content claims are made
    - [ ] Content satisfies the `Erforderlich` (required elements) checklist of this session's declared type in `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`). If the type has no required elements defined, flag this as a Session Types gap rather than skipping the check.
+   - [ ] `[if the session has a **Method:** line]` Content satisfies the `Erforderlich` checklist of the declared Session Method in `data/didactic-methods.md` — checked independently of, and in addition to, the Type check above.
+   - [ ] Estimated duration per `data/duration-heuristic.md` (reading time + activity time, not word count alone) is within 70%–150% of the declared duration for this session in `journal.md` → `## Agenda`. This is always advisory — record the flag either way, never fail the report on this alone.
 
    **Persona & style checks:**
    - [ ] Tone matches the Coauthor role from `journal.md` → `## Agents` → `### Coauthor`
    - [ ] Terminology matches `journal.md` → `## Course Context` (sessions-called, etc.)
 
-   **LiaScript syntax checks** (against `data/liascript-cheat-sheet.md`):
-   - [ ] Exactly one `#` heading in the file (course title)
-   - [ ] `###` and deeper headings only inside HTML blocks, lists, or blockquotes
-   - [ ] All code blocks properly closed (triple backticks)
-   - [ ] Animation counters (`--{{n}}--`, `{{n}}`) reset to 0 after each `##`
-   - [ ] Quiz syntax correct: `[(X)]` for single choice, `[[X]]` for multiple choice, `[[answer]]` for text
-   - [ ] All media elements have alt text
-   - [ ] No unclosed `<div>` blocks
+   **LiaScript syntax checks:**
+   - Run `tasks/validate-syntax.md` for this material and fold its findings into this report. Do not restate the individual syntax rules here — `validate-syntax.md` is the single source of truth for them.
 
    **Template checks** `[if `journal.md` → `## Templates` exists or the material uses template macros]`:
    - [ ] Every template macro used in the material is documented in `journal.md` → `## Templates`
@@ -102,6 +100,7 @@ Rules:
    - `journal.md` → `## Course Context` complete (course type, terminology, agenda flag, conventions)
    - `journal.md` → `## Outline`: title, target audience, time commitment `[not single-lesson]`, abstract, learning objectives
    - `journal.md` → `## Didactics`: instructor persona, didactic concept, style, difficulty level, Session Types (each with slug, criterion, and required-elements checklist)
+   - `journal.md` → `## Didactics` has both `__Didactic Framework:__` and `__Default Session Method:__` set (the latter may explicitly be `none`). If either is missing entirely, flag this as a gap rather than silently skipping — same principle as an undefined Session Type (see `data/didactic-methods.md`).
    - `journal.md` → `## Agents` exists and contains scoped `### Coauthor` and `### Learner Personas` containers
 
 4b. **Check Templates** `[if `journal.md` → `## Templates` exists or material files use template macros]`:
@@ -111,6 +110,7 @@ Rules:
 
 5. **Check Agenda** `[if agenda flag = yes in journal.md → ## Course Context]`:
    - All sessions have title, duration, type, learning objective, summary
+   - `[if journal.md → ## Didactics → __Default Session Method:__ is not "none"]` All sessions have a Method assigned
    - Learning objectives align with `journal.md` → `## Outline`
 
 6. **Check Session Progress:**
@@ -167,6 +167,17 @@ Rules:
 11. After all session validation reports and the latest summary are created: suggest next step.
     - If issues exist: "Open `:coauthor-materials {number} {type}` to resolve the issues in Session X, then rerun `:validate-course`."
     - If no issues: "Course is ready for publishing. Next step: `:agent development` → `:create-project`"
+
+---
+
+### Iteration (mechanical checks only)
+
+**Loop:** Repeat "fix `[mechanical]` issues → rerun `:validate-course`" until every `[mechanical]`-tagged item in `checklists/course-quality-checklist.md` passes, or after 5 iterations — whichever comes first.
+
+- In scope for the loop: LiaScript syntax findings from `tasks/validate-syntax.md`, broken links/alt text, missing required elements, structural gaps, and the duration flag from `data/duration-heuristic.md` — everything tagged `[mechanical]`.
+- Never auto-loop on `[pedagogical]`-tagged items — always surface those to the instructor immediately (core rule: critical sparring partner, not a rubber stamp).
+- On hitting the 5-iteration cap without a clean mechanical pass: stop, list the remaining `[mechanical]` FAIL items, and hand back to the instructor instead of continuing.
+- See `CLAUDE.md` → "Iteration Pattern" for the general convention. Under Claude Code this can additionally be driven with `/goal "journal.md → ## Validation → ### Latest Validation Summary shows all [mechanical] checklist items passing, or stop after 5 iterations"`.
 
 ---
 

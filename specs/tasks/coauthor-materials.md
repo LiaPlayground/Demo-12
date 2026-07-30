@@ -18,6 +18,8 @@ Suggest images for visualization, either as a search term or as a concrete image
 - Optionally, corresponding session subsection in `journal.md` → `## Sessions`
 - Didactic inputs from `journal.md` → `## Didactics` (concept, course type, difficulty; not the primary persona source)
 - Open questions or ideas from instructors (discussion points)
+- `tasks/validate-syntax.md` — optional self-check for LiaScript syntax while drafting, ahead of formal validation
+- `data/duration-heuristic.md` — optional self-check for whether the emerging content volume still matches the session's declared duration
 
 ## Output
 

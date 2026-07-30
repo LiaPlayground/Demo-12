@@ -864,6 +864,95 @@ course-bundle/
 ==================== END: specs/tasks/assemble-bundle.md ====================
 
 
+==================== START: specs/tasks/build-session.md ====================
+
+# Task: build-session
+
+## Purpose
+
+Orchestrates the full pipeline for one session — skeleton → generated material → validated → persona-reviewed → illustrated — as a single command with a clear stop condition, instead of manually invoking `:promote-session`, `:validate-course`, `:review-as-persona`, `:create-image`, and `:generate-image` one at a time and checking each result by hand.
+
+`promote-session.md` itself is unchanged — this task calls it, and the other existing tasks, as sub-procedures.
+
+## Command
+
+`:build-session {number} {type}`
+
+## Inputs
+
+- `number`, `type`
+- `journal.md` → `## Sessions` — session skeleton (created if missing, see Step 0)
+- `journal.md` → `## Agenda` — declared duration for this session
+- `journal.md` → `## Agents` → `### Learner Personas` — if present, drives Step 2
+- Referenced sub-procedures: `tasks/create-session-skeleton.md`, `tasks/promote-session.md`, `tasks/create-image.md`, `tasks/generate-image.md`, `tasks/validate-course.md`, `tasks/validate-syntax.md`, `tasks/review-as-persona.md`, `tasks/quick-fix.md`, `data/duration-heuristic.md`
+
+## Output
+
+- Fully promoted, validated material for the session
+- `#### Validation Report` and (if personas exist) `#### Persona Reviews` in the matching `journal.md` → `## Sessions` subsection
+- Real images inserted, replacing placeholders
+- Session marked ✅ Done in the `## Sessions` overview table; dashboard updated
+- A closing summary: iterations spent per loop, final validation result, persona verdicts, images inserted, and anything that had to be escalated to the instructor
+
+## Steps
+
+### 0. Ensure a skeleton exists
+
+If `journal.md` → `## Sessions` has no `### {number}. {title}` subsection yet, run `tasks/create-session-skeleton.md` first (one-shot — it asks the instructor for a title the normal way). Otherwise continue.
+
+### 1. Content loop (mechanical gate)
+
+a. **First iteration only:** if the session's overview-table `Material` column is already ✅, ask the instructor before regenerating — `:promote-session` replaces the material wholesale and would silently discard any prior co-authoring. Otherwise, run `tasks/promote-session.md {number} {type}` to generate the full material.
+
+b. **First iteration only:** identify spots in the freshly generated material that would benefit from an image (diagrams, illustrations, header art) and run `tasks/create-image.md {number} {type} {description}` for each one, producing prompt-ready placeholders in this session's `#### Images` block. Keep the list of `{image-slug}`s created here — Step 3 needs it.
+
+c. Run `tasks/validate-course.md {number} {type}` (session mode) — this internally calls `tasks/validate-syntax.md` and applies `data/duration-heuristic.md`, and writes `#### Validation Report`.
+
+d. If any `[mechanical]`-tagged item (per `checklists/course-quality-checklist.md`) is FAIL: run `:quick-fix {number} {type} {description}` for each one. If a `:quick-fix` call escalates to `:coauthor-materials` per its own step 5 rule: **stop this loop immediately** and hand off to the instructor — do not invoke `:coauthor-materials` automatically, it requires a human in the loop.
+
+e. If any `[pedagogical]`-tagged item is flagged (including a "possibly too short" duration flag): do not auto-fix. Carry it forward into Step 2. If no personas exist to weigh in (Step 2 will be skipped), surface it directly in the closing report instead.
+
+**Loop:** Repeat b–d until every `[mechanical]` item passes, or after 5 iterations — whichever comes first. On hitting the cap: stop, list the remaining `[mechanical]` FAIL items, and report to the instructor instead of continuing to Step 2. See `CLAUDE.md` → "Iteration Pattern" for the general convention.
+
+### 2. Persona review loop `[only if journal.md → ## Agents → ### Learner Personas contains at least one persona]`
+
+a. For each persona, run `tasks/review-as-persona.md {name} {number} {type}` in **report-only mode**: perform its steps 1–7 (produce and save the structured `#### Persona Reviews` report) and skip steps 8–10 (the persistent in-character follow-up chat) — there is no one present to chat with during an automated loop. The instructor can start that chat separately afterward by calling `:review-as-persona` directly.
+
+b. If any persona's `Priority Issues` include a blocking concern — including a "content feels too short/rushed" comment, which is the real judgment call on the Step 1e duration flag — fix it via `:quick-fix` (isolated issue) or by re-running Step 1 (broader issue), using the same "When to use vs. `:coauthor-materials`" table from `tasks/quick-fix.md` as the decision rule. If a fix needs `:coauthor-materials`: stop and hand off to the instructor, same rule as Step 1d.
+
+c. After fixes, re-run Step 1 and then this step again for **all** personas (not just the one that raised the concern, to catch regressions).
+
+**Loop:** Repeat a–c until no persona raises a blocking concern, or after 3 rounds — whichever comes first. On hitting the cap: stop, list the unresolved persona concerns, and report to the instructor.
+
+`[if no personas exist]`: skip this step entirely. Note in the closing report that no persona review was performed and suggest `:create-learner-persona` if that seems useful.
+
+### 3. Image finalization
+
+Runs **once**, only if Steps 1 and 2 both finished clean (did not stop early on a cap or an escalation). If either loop stopped early, do not proceed — the closing report from that step is the end of this run.
+
+For each `{image-slug}` created in Step 1b, run `tasks/generate-image.md {slug}` (single mode, scoped to this session's own images — not the global batch mode, which would also process other sessions' pending images) to generate, download, and insert the real image, replacing the placeholder. This runs automatically, without an extra confirmation, once content and persona checks are clean.
+
+### 4. Finalize
+
+Mark the session ✅ Done in the `journal.md` → `## Sessions` overview table (if not already). Run `tasks/update-dashboard.md`. Report the closing summary described in Output above.
+
+## Cross-agent execution note
+
+Steps 2 and 3 run the Learner-Agent's and Artist-Agent's own task procedures automatically as sub-steps of this loop, rather than through the usual conversational "suggest `:agent X`" handoff (see `CLAUDE.md` → "Agent Coordination" → the `:build-session` exception). Each sub-step still only reads its owning agent's own `### {Agent}` subsection in `journal.md` → `## Agents` — the read-scope rule stays in force even though the switch happens automatically instead of by explicit instructor command.
+
+## When to use vs. manual step-by-step
+
+| Situation | Use |
+|---|---|
+| First pass on a new session, want the full pipeline in one go | `:build-session` |
+| Only want to regenerate material without touching validation/personas/images | `:promote-session` |
+| Only want to check syntax/content without the full loop | `:validate-course` |
+| Want to sit in the room and co-author interactively | `:coauthor-materials` |
+| Want to add or refine one image, not run the whole pipeline | `:create-image` / `:generate-image` |
+
+==================== END: specs/tasks/build-session.md ====================
+
+
 ==================== START: specs/tasks/coauthor-materials.md ====================
 
 # Task: coauthor-materials
@@ -886,6 +975,8 @@ Suggest images for visualization, either as a search term or as a concrete image
 - Optionally, corresponding session subsection in `journal.md` → `## Sessions`
 - Didactic inputs from `journal.md` → `## Didactics` (concept, course type, difficulty; not the primary persona source)
 - Open questions or ideas from instructors (discussion points)
+- `tasks/validate-syntax.md` — optional self-check for LiaScript syntax while drafting, ahead of formal validation
+- `data/duration-heuristic.md` — optional self-check for whether the emerging content volume still matches the session's declared duration
 
 ## Output
 
@@ -1013,6 +1104,8 @@ Defines sessions/modules with title, duration, type (slug from `journal.md` → 
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
 - Style & difficulty level from `journal.md` → `## Didactics`
 - Course type from `journal.md` → `## Course Context`
+- Default Session Method from `journal.md` → `## Didactics` → `__Default Session Method:__` (see `data/didactic-methods.md`)
+- `data/duration-heuristic.md` — optional orientation when estimating realistic per-session durations (not a required check at this stage)
 
 ## Output
 
@@ -1040,11 +1133,14 @@ Defines sessions/modules with title, duration, type (slug from `journal.md` → 
 - All agenda descriptions reflect this style.
 
 5. Define sessions/modules using the terminology from `journal.md` → `## Course Context`. Assign each one a type slug from `journal.md` → `## Didactics` → `__Session Types:__` — never a hardcoded `lecture`/`exercise`.
+   - `[if journal.md → ## Didactics → __Default Session Method:__ is not "none"]`: assign each session the default Session Method, pre-selected. 🎛️ Ask per session whether a different method from `data/didactic-methods.md` fits better for that specific session — keep the default unless the instructor picks something else. Do not ask this at all when the default is `none`.
 6. Build the agenda in a structured form adapted to the pacing model:
    - **lecture-series**: sessions with time slots and weekly schedule
    - **workshop**: blocks with approximate time per block
    - **self-paced**: modules without fixed time slots, estimated duration only
    - **single-lesson** (if agenda is yes): sections/chapters within the lesson, no time slots
+
+   When assigning a duration, `data/duration-heuristic.md` can help sanity-check that it's realistic for the planned content volume — this is orientation only, not a required check here (the actual check happens later in `:validate-course`).
 7. Fill the `templates/course-agenda.yaml` template with the results.
 8. Save the generated agenda by replacing the content of `journal.md` → `## Agenda` — flat `* __Label:__` bullets plus the sessions table, no sub-headings.
 9. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
@@ -1068,6 +1164,7 @@ Builds on the outline to ensure a consistent teaching strategy aligned with the 
 - Target audience from `journal.md` → `## Outline`
 - Learning objectives from `journal.md` → `## Outline`
 - Course type & conventions from `journal.md` → `## Course Context`
+- `data/didactic-methods.md` — course frameworks, session methods, and their default suggestions by course type
 
 ## Output
 
@@ -1084,10 +1181,12 @@ Builds on the outline to ensure a consistent teaching strategy aligned with the 
    - **self-paced**: modular, learner-driven, self-check oriented
    - **workshop**: activity-driven, collaborative, time-boxed
    - **single-lesson**: focused, compact, single arc
+3a. 🎛️ Propose a **Didactic Framework** from `data/didactic-methods.md` → "Course Frameworks", based on course type. Let the instructor confirm or change it. This is documentation/vocabulary only — it does not change any later step's behavior.
 3b. Define `__Session Types:__` (see `data/session-types.md` for the full mechanism):
    - **single-lesson**: default to one type named after `lectures-called`; skip the discussion unless the instructor wants to split the lesson into sub-types.
    - **all other course types**: 🎛️ propose the default Session Types for this course type from the table in `data/session-types.md`, each with slug, one-line criterion, and a 2–3 item required-elements checklist. Let the instructor confirm or edit.
    - 💬 Grounding check (mandatory, do not skip): ask the instructor to name one concretely planned session and which Session Type it would get, and why. If the answer doesn't fit any proposed type, revise the types before continuing — don't let an unfitting default stand.
+3c. 🎛️ Propose a **Default Session Method** from `data/didactic-methods.md` → "Session Methods", based on course type — include the option to pick **`none`** (no specific method, opt out entirely). Let the instructor confirm, change, or opt out. This becomes the course-wide default; `:create-agenda` can override it per session later.
 4. 💬 Describe the instructor persona (expertise, role, background) — free text, discuss with instructor.
 5. 🎛️ Define teaching style (structured question — single choice with optional free-text addition):
    - humorous / academic / practical / conversational / mixed
@@ -1634,6 +1733,7 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 - **Coauthor role from `journal.md` → `## Agents` → `### Coauthor` (mandatory handoff)**
 - Style, difficulty level, and didactic concept from `journal.md` → `## Didactics`
 - Terminology from `journal.md` → `## Course Context` (sessions-called, lectures-called)
+- Default Session Method from `journal.md` → `## Didactics` → `__Default Session Method:__`, and the matching session's Method column in `journal.md` → `## Agenda` if an agenda exists (see `data/didactic-methods.md`)
 
 ## Output
 
@@ -1647,6 +1747,7 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 3. Adopt didactic concept and course type from Didactics.
    - Look up the given type in `journal.md` → `## Didactics` → `__Session Types:__`. If it doesn't match a defined slug, stop and ask — do not invent a type on the fly.
    - Note its `Erforderlich` (required elements) checklist; Activities/Content in step 5 must satisfy it.
+   - Resolve the session's Method: if `journal.md` → `## Agenda` exists and has a Method column, use this session's value from there; otherwise use `journal.md` → `## Didactics` → `__Default Session Method:__`. If that default is `none`, skip Method entirely — no line is stored, no checklist applies. Note the method's `Erforderlich` checklist from `data/didactic-methods.md`, independently of the Type checklist above.
 4. **Agent adopts the Coauthor role from `journal.md` → `## Agents` → `### Coauthor` into its own persona.**
    - From this step, the agent writes in the tone of the Coauthor role.
    - If the Coauthor role is missing or inactive, fall back to `journal.md` → `## Didactics` → `__Professor Persona:__`, `__Teaching Style:__`, and `__Persona Voice Sample:__`, then state that the Coauthor role should be synchronized into `## Agents`.
@@ -1660,17 +1761,18 @@ Creates a **skeleton** for one session (or unit/block/lesson — see `journal.md
 
    - Store the session type as its own line: `**Type:** {type}`.
    - Do not include the type in the subsection heading.
+   - If a Method was resolved (step 3): store it as its own line directly after `**Type:**`: `**Method:** {method}`. Omit this line entirely if the resolved default is `none`.
    - `**Summary:**` and `**Content:**` are free text blocks and may contain more than one paragraph.
    - `**Activities:**` must be a numbered list.
    - `**References:**` must be a numbered list.
    - End the subsection with an empty `#### Images` block (placeholder note); it is later filled by `:create-image` and rendered by `:generate-image`.
 8. Update the overview table inside `journal.md` → `## Sessions`:
-   - If `journal.md` → `## Sessions` does not exist yet, create it with the overview table first:
+   - If `journal.md` → `## Sessions` does not exist yet, create it with the overview table first. Include a `Method` column only if `journal.md` → `## Didactics` → `__Default Session Method:__` is not `none`:
      ```
-     | # | Title | Type | Skeleton | Material | Done | Notes |
-     |---|---|---|---|---|---|---|
+     | # | Title | Type | Method | Skeleton | Material | Done | Notes |
+     |---|---|---|---|---|---|---|---|
      ```
-   - Add a new row: `| {number} | {title} | {type} | ✅ | ❌ | ❌ | |`
+   - Add a new row: `| {number} | {title} | {type} | {method} | ✅ | ❌ | ❌ | |` (omit the Method column entirely, matching the table header, if no method is in use)
    - If a row for this session already exists, update the Skeleton column to ✅.
    - Keep the overview table before all `### {number}. {title}` subsections.
 9. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
@@ -2273,6 +2375,7 @@ Converts a **Session** into a detailed **Session Material**.
 - Style, difficulty level, and didactic concept from `journal.md` → `## Didactics`
 - Terminology from `journal.md` → `## Course Context`
 - File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
+- Session Method from the skeleton's `**Method:**` line, if present, and its structural guidance from `data/didactic-methods.md` → "Session Methods"
 
 ## Output
 
@@ -2286,6 +2389,7 @@ Converts a **Session** into a detailed **Session Material**.
 2. Read `journal.md` → `## Course Context` for terminology and conventions.
 3. Adopt didactic concept and course type from Didactics.
    - Look up the session's type in `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`) and note its `Erforderlich` (required elements) checklist; the generated outline in step 7 must satisfy it.
+   - If the skeleton has a `**Method:**` line, look it up in `data/didactic-methods.md` → "Session Methods" and note both its structural guidance and its `Erforderlich` checklist — the generated outline in step 7 must satisfy this in addition to, and independently of, the Type checklist above.
 4. **Agent adopts the Coauthor role from `journal.md` → `## Agents` → `### Coauthor` into its own persona.**
    - From this step, the agent writes in the tone of the Coauthor role.
    - If the Coauthor role is missing or inactive, fall back to `journal.md` → `## Didactics` → `__Professor Persona:__`, `__Teaching Style:__`, and `__Persona Voice Sample:__`, then state that the Coauthor role should be synchronized into `## Agents`.
@@ -2321,7 +2425,7 @@ Equivalent to BMAD's "Quick Flow" — minimal overhead for small, targeted chang
 - `description`: what to fix (brief, e.g., "Typo in section 3", "Fix quiz syntax in slide 5", "Replace example for learning objective 2")
 - The material document to change — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode
 - `journal.md` → `## Course Context` — for conventions and terminology
-- `data/liascript-cheat-sheet.md` — for syntax reference if the fix involves LiaScript
+- `tasks/validate-syntax.md` — for syntax mini-validation if the fix involves LiaScript (single source of truth for syntax rules)
 
 ## Output
 
@@ -2336,7 +2440,7 @@ Equivalent to BMAD's "Quick Flow" — minimal overhead for small, targeted chang
 2. **Make the targeted change only** — no refactoring, no adjacent edits, no style improvements beyond the stated fix.
 
 3. **Mini-validation of the affected section:**
-   - LiaScript syntax correct in the changed area?
+   - Run `tasks/validate-syntax.md` scoped to the changed area — do not restate syntax rules here.
    - Persona/tone consistent with `journal.md` → `## Didactics`?
    - No unintended regression in surrounding content?
 
@@ -2346,6 +2450,8 @@ Equivalent to BMAD's "Quick Flow" — minimal overhead for small, targeted chang
    - If the fix changed session state (e.g., a Notes entry in the `## Sessions` overview table): run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
 
 5. **Escalate if scope grows:** If the fix reveals structural issues or multiple sections need rework, stop and escalate to `:coauthor-materials` — do NOT proceed silently.
+
+**Loop:** After applying a fix, re-check the specific issue (step 3). If still unresolved, repeat once more — max 2 attempts total. If the second attempt also reveals structural issues or doesn't resolve cleanly, stop and escalate to `:coauthor-materials` per step 5 — do not attempt a third fix. See `CLAUDE.md` → "Iteration Pattern" for the general convention.
 
 ---
 
@@ -3016,7 +3122,9 @@ Can be run in two modes:
 - `journal.md` → `## Course Context` — course type and conventions
 - `journal.md` → `## Templates` — LiaScript template imports, macros, and examples (if present)
 - `checklists/course-quality-checklist.md` — structured checklist
-- `data/liascript-cheat-sheet.md` — syntax reference for LiaScript checks
+- `tasks/validate-syntax.md` — full LiaScript syntax check, called as a sub-procedure (single source of truth for syntax rules)
+- `data/duration-heuristic.md` — reading time + activity time estimate, compared against the declared duration
+- `data/didactic-methods.md` — Session Method `Erforderlich` checklists, if a session method is in use
 - `templates/session-validation.yaml` — template for each stored session validation report
 - File Structure mode from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`)
 - For session mode: the material document for this session (resolved per File Structure mode), matching overview row in `journal.md` → `## Sessions`, and matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
@@ -3056,19 +3164,15 @@ Rules:
    - [ ] No section is vague, content-free, or placeholder-only
    - [ ] References present where content claims are made
    - [ ] Content satisfies the `Erforderlich` (required elements) checklist of this session's declared type in `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`). If the type has no required elements defined, flag this as a Session Types gap rather than skipping the check.
+   - [ ] `[if the session has a **Method:** line]` Content satisfies the `Erforderlich` checklist of the declared Session Method in `data/didactic-methods.md` — checked independently of, and in addition to, the Type check above.
+   - [ ] Estimated duration per `data/duration-heuristic.md` (reading time + activity time, not word count alone) is within 70%–150% of the declared duration for this session in `journal.md` → `## Agenda`. This is always advisory — record the flag either way, never fail the report on this alone.
 
    **Persona & style checks:**
    - [ ] Tone matches the Coauthor role from `journal.md` → `## Agents` → `### Coauthor`
    - [ ] Terminology matches `journal.md` → `## Course Context` (sessions-called, etc.)
 
-   **LiaScript syntax checks** (against `data/liascript-cheat-sheet.md`):
-   - [ ] Exactly one `#` heading in the file (course title)
-   - [ ] `###` and deeper headings only inside HTML blocks, lists, or blockquotes
-   - [ ] All code blocks properly closed (triple backticks)
-   - [ ] Animation counters (`--{{n}}--`, `{{n}}`) reset to 0 after each `##`
-   - [ ] Quiz syntax correct: `[(X)]` for single choice, `[[X]]` for multiple choice, `[[answer]]` for text
-   - [ ] All media elements have alt text
-   - [ ] No unclosed `<div>` blocks
+   **LiaScript syntax checks:**
+   - Run `tasks/validate-syntax.md` for this material and fold its findings into this report. Do not restate the individual syntax rules here — `validate-syntax.md` is the single source of truth for them.
 
    **Template checks** `[if `journal.md` → `## Templates` exists or the material uses template macros]`:
    - [ ] Every template macro used in the material is documented in `journal.md` → `## Templates`
@@ -3105,6 +3209,7 @@ Rules:
    - `journal.md` → `## Course Context` complete (course type, terminology, agenda flag, conventions)
    - `journal.md` → `## Outline`: title, target audience, time commitment `[not single-lesson]`, abstract, learning objectives
    - `journal.md` → `## Didactics`: instructor persona, didactic concept, style, difficulty level, Session Types (each with slug, criterion, and required-elements checklist)
+   - `journal.md` → `## Didactics` has both `__Didactic Framework:__` and `__Default Session Method:__` set (the latter may explicitly be `none`). If either is missing entirely, flag this as a gap rather than silently skipping — same principle as an undefined Session Type (see `data/didactic-methods.md`).
    - `journal.md` → `## Agents` exists and contains scoped `### Coauthor` and `### Learner Personas` containers
 
 4b. **Check Templates** `[if `journal.md` → `## Templates` exists or material files use template macros]`:
@@ -3114,6 +3219,7 @@ Rules:
 
 5. **Check Agenda** `[if agenda flag = yes in journal.md → ## Course Context]`:
    - All sessions have title, duration, type, learning objective, summary
+   - `[if journal.md → ## Didactics → __Default Session Method:__ is not "none"]` All sessions have a Method assigned
    - Learning objectives align with `journal.md` → `## Outline`
 
 6. **Check Session Progress:**
@@ -3173,6 +3279,17 @@ Rules:
 
 ---
 
+### Iteration (mechanical checks only)
+
+**Loop:** Repeat "fix `[mechanical]` issues → rerun `:validate-course`" until every `[mechanical]`-tagged item in `checklists/course-quality-checklist.md` passes, or after 5 iterations — whichever comes first.
+
+- In scope for the loop: LiaScript syntax findings from `tasks/validate-syntax.md`, broken links/alt text, missing required elements, structural gaps, and the duration flag from `data/duration-heuristic.md` — everything tagged `[mechanical]`.
+- Never auto-loop on `[pedagogical]`-tagged items — always surface those to the instructor immediately (core rule: critical sparring partner, not a rubber stamp).
+- On hitting the 5-iteration cap without a clean mechanical pass: stop, list the remaining `[mechanical]` FAIL items, and hand back to the instructor instead of continuing.
+- See `CLAUDE.md` → "Iteration Pattern" for the general convention. Under Claude Code this can additionally be driven with `/goal "journal.md → ## Validation → ### Latest Validation Summary shows all [mechanical] checklist items passing, or stop after 5 iterations"`.
+
+---
+
 ## Publishing Gate
 
 **Enforced after every course-mode validation run. Controls access to publishing commands.**
@@ -3186,6 +3303,93 @@ Rules:
 **Rule:** Never suggest or assist with `:create-project` or `:update-project` unless `journal.md` → `## Validation` → `### Latest Validation Summary` contains both `Mode: course` and `Result: PASS` — regardless of how the instructor asks.
 
 ==================== END: specs/tasks/validate-course.md ====================
+
+
+==================== START: specs/tasks/validate-syntax.md ====================
+
+# Task: validate-syntax
+
+## Purpose
+
+The single source of truth for LiaScript syntax validation of one material document — derived from every normative section of `data/liascript-cheat-sheet.md`. Other tasks call this task as a sub-procedure instead of re-describing syntax rules themselves, so the rules are defined once and never drift out of sync across `validate-course`, `quick-fix`, `build-session`, and the quality checklist.
+
+## Command
+
+`:validate-syntax {number} {type}` — checks LiaScript syntax for one session's material document.
+
+This task is also invoked internally (not just via the command) by `tasks/validate-course.md` (session and course mode), `tasks/quick-fix.md` (mini-validation), and `tasks/build-session.md` (content loop) — those tasks call it as a sub-procedure rather than repeating the checks below.
+
+## Inputs
+
+- `number`, `type`
+- The material document for this session — resolved from `journal.md` → `## Course Context` → `__File Structure:__` (see `data/file-structure-modes.md`): `materials/{number}-{slug}/README.md` in multi-file mode, or the matching `##` chapter in root `/README.md` in single-file mode
+- `data/liascript-cheat-sheet.md` as the syntax reference
+- Optionally, a narrower scope (e.g. "only the changed section") when called by `quick-fix.md`
+
+## Output
+
+- A structured findings list: rule, ✅/❌, line reference where possible.
+- **When called as a sub-procedure:** return the findings list to the calling task — do not write to `journal.md` directly; the caller decides where the combined report lands (e.g. inside `#### Validation Report`).
+- **When run standalone via `:validate-syntax`:** report the findings to the instructor directly in chat; no `journal.md` write.
+
+## Steps
+
+1. Resolve the material document (or the given narrower scope) per the Inputs above.
+2. Load `data/liascript-cheat-sheet.md` as the syntax reference.
+3. Run every check below against the material, noting rule, ✅/❌, and line reference where possible.
+4. If invoked as a sub-procedure: return the findings list to the caller — do not ask the instructor anything.
+5. If invoked directly: report the findings using the Output Format below.
+
+## Checks
+
+1. **Metadata header** (cheat sheet §1): `author`, `email`, `version`, `language`, `narrator` present and well-formed in the `<!-- ... -->` header block.
+2. **Heading structure** (§2): exactly one `#` heading (course title); every `##` starts a new slide; a bare `###` directly under a `##` is fine; `####`-or-deeper only inside a `<div>`/semantic wrapper, a list, or a blockquote — never bare.
+3. **Code blocks** (§8): every fenced code block opened with triple backticks is closed; correct language tag used (`js`, `py`, `html`, etc.); interactive code blocks pair a `<script>`/`@input` block directly after the code block where applicable.
+4. **Alerts** (§3): alert blockquotes use only supported types (`NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`); every line of the alert starts with `>`.
+5. **Citations** (§3): citation blockquotes have a `--` source line, preceded by an empty `>` line.
+6. **Animations & TTS** (§4, §14): `--{{n}}--` / `{{n}}` numbering resets to 0 after each `##`; every `{{n}}` animated content block has a matching `--{{n}}--` TTS comment; narrator overrides use the `<!-- narrator: ... -->` form; `{{|>}}` play-button syntax is well-formed where used.
+7. **Media** (§5): every `![]`, `?[]`, `!?[]`, `??[]` element has meaningful alt text/caption.
+8. **Diagrams** (§6): Mermaid code blocks tagged `@mermaid`; ASCII diagrams tagged `ascii`.
+9. **Formulas** (§7): inline `$...$` and block `$$...$$` LaTeX delimiters correctly paired.
+10. **Quizzes & surveys** (§10, §10b): classic quiz syntax (`[(X)]` single choice, `[[X]]` multiple choice, `[[answer]]` text quiz, `?[...]` open question) **and** survey variants (`[[___]]` text input, single-/multi-choice vector, single-/multi-choice matrix) are correctly formed.
+11. **Includes** (§11): `@import`/`@include` reference existing local/external targets and use the correct directive for local vs. external content.
+12. **Variables & macros** (§12): `@var` variables are defined (header or comment block) before use and used consistently throughout.
+13. **HTML blocks**: no unclosed `<div>` (or other HTML container) blocks.
+
+## Output Format
+
+```
+Syntax check: {material path}
+
+1. Metadata header — ✅/❌ [findings]
+2. Heading structure — ✅/❌ [findings, line refs]
+3. Code blocks — ✅/❌ [findings, line refs]
+4. Alerts — ✅/❌ [findings, line refs]
+5. Citations — ✅/❌ [findings, line refs]
+6. Animations & TTS — ✅/❌ [findings, line refs]
+7. Media alt text — ✅/❌ [findings, line refs]
+8. Diagrams — ✅/❌ [findings, line refs]
+9. Formulas — ✅/❌ [findings, line refs]
+10. Quizzes & surveys — ✅/❌ [findings, line refs]
+11. Includes — ✅/❌ [findings, line refs]
+12. Variables & macros — ✅/❌ [findings, line refs]
+13. HTML blocks — ✅/❌ [findings, line refs]
+
+Result: PASS / FAIL (N issues)
+```
+
+## Relation to other tasks
+
+| Task | How it uses `validate-syntax` |
+|---|---|
+| `validate-course.md` | Calls it for every material file in session and course mode; folds the findings into `#### Validation Report` |
+| `quick-fix.md` | Calls it scoped to the changed area during mini-validation |
+| `build-session.md` | Calls it (via `validate-course`) inside the content loop's mechanical gate |
+| `coauthor-materials.md` | May call it optionally during drafting as a self-check |
+
+Do not duplicate the checklist above inside any of these tasks — reference this file instead.
+
+==================== END: specs/tasks/validate-syntax.md ====================
 
 
 ==================== START: specs/templates/agents.yaml ====================
@@ -3299,6 +3503,7 @@ template:
         Each session includes:
 
         - Title, duration, type (slug from `journal.md` → `## Didactics` → `__Session Types:__`, see `data/session-types.md`)
+        - Method (slug from `data/didactic-methods.md` → "Session Methods"; defaults to `journal.md` → `## Didactics` → `__Default Session Method:__`, can be overridden per session — omitted entirely if the default is `none`)
         - Learning objective(s), summary
         - Automatic materials path, resolved from `journal.md` → `## Course Context` →
           `__File Structure:__` (see `data/file-structure-modes.md`): a `##` chapter in
@@ -3407,6 +3612,16 @@ template:
       template: |
         * __Course Type:__
           [Type of course: introductory, advanced, practice-oriented, group work, self-learning — and what that means for pacing and learner autonomy.]
+    - id: didactic-framework
+      title: Didactic Framework
+      template: |
+        * __Didactic Framework:__ {{framework name}} (see `data/didactic-methods.md`)
+          [One line: why this framework fits this course.]
+    - id: default-session-method
+      title: Default Session Method
+      template: |
+        * __Default Session Method:__ {{method name (slug: `{{slug}}`) or `none`}} (see `data/didactic-methods.md`)
+          [One line: why this method fits this course, or why no specific method was chosen.]
     - id: session-types
       title: Session Types
       template: |
@@ -4301,6 +4516,11 @@ template:
       template: |
         **Type:** {{type}}
       note: '{{type}} is a slug from `journal.md` → `## Didactics` → `__Session Types:__` (see `data/session-types.md`) — never a hardcoded `lecture`/`exercise`. Fill Activities/Content below so they satisfy that type''s `Erforderlich` checklist.'
+    - id: method
+      title: Method
+      template: |
+        **Method:** {{method}}
+      note: '{{method}} is a slug from `data/didactic-methods.md` → "Session Methods", resolved from the matching Agenda row if an agenda exists, otherwise from `journal.md` → `## Didactics` → `__Default Session Method:__`. Omit this line entirely if the default is `none`. Content must satisfy that method''s `Erforderlich` checklist, independently of the Type checklist above.'
     - id: summary
       title: Summary
       template: |
@@ -4496,103 +4716,264 @@ template:
 # Checklist: Course Quality
 
 > **Usage note:** Read `journal.md` → `## Course Context` first. Skip any check marked `[condition]` if the condition does not apply to this course type.
+>
+> **Tags:** `[mechanical]` = verifiable from structure/presence/syntax, no content judgment needed — safe for the automated loop in `tasks/validate-course.md` → "Iteration (mechanical checks only)". `[pedagogical]` = needs content/didactic judgment — always escalated to the instructor, never auto-fixed in a loop.
 
 ## Context
 
-- [ ] `journal.md` → `## Course Context` exists
-- [ ] Course type defined
-- [ ] Terminology set (sessions-called, lectures-called)
-- [ ] Language & tone conventions set
-- [ ] Agenda flag correct (yes / no / optional)
-- [ ] Person (Sie / Du / you) set
-- [ ] File Structure mode declared (`single-file` / `multi-file`) and matches the actual materials layout on disk (see `data/file-structure-modes.md`)
+- [ ] [mechanical] `journal.md` → `## Course Context` exists
+- [ ] [mechanical] Course type defined
+- [ ] [mechanical] Terminology set (sessions-called, lectures-called)
+- [ ] [mechanical] Language & tone conventions set
+- [ ] [mechanical] Agenda flag correct (yes / no / optional)
+- [ ] [mechanical] Person (Sie / Du / you) set
+- [ ] [mechanical] File Structure mode declared (`single-file` / `multi-file`) and matches the actual materials layout on disk (see `data/file-structure-modes.md`)
 
 ## Outline
 
-- [ ] Title present
-- [ ] Target audience clearly defined
-- [ ] Time commitment specified `[lecture-series, workshop]`
-- [ ] Time commitment present or estimated `[self-paced]`
-- [ ] Abstract complete (topics, benefits, application)
-- [ ] 3–5 learning objectives formulated, measurable (verb + context)
-- [ ] Optional: Logo prompt
+- [ ] [mechanical] Title present
+- [ ] [pedagogical] Target audience clearly defined
+- [ ] [mechanical] Time commitment specified `[lecture-series, workshop]`
+- [ ] [mechanical] Time commitment present or estimated `[self-paced]`
+- [ ] [pedagogical] Abstract complete (topics, benefits, application)
+- [ ] [pedagogical] 3–5 learning objectives formulated, measurable (verb + context)
+- [ ] [mechanical] Optional: Logo prompt
 
 ## Didactics
 
-- [ ] Refers to outline
-- [ ] Didactic concept clear
-- [ ] Instructor persona defined (background, role, style)
-- [ ] Style & difficulty level specified
-- [ ] Course type consistent with `journal.md` → `## Course Context`
-- [ ] Session Types defined, each with slug, criterion, and required-elements checklist (see `data/session-types.md`)
+- [ ] [pedagogical] Refers to outline
+- [ ] [pedagogical] Didactic concept clear
+- [ ] [mechanical] Instructor persona defined (background, role, style)
+- [ ] [mechanical] Style & difficulty level specified
+- [ ] [mechanical] Course type consistent with `journal.md` → `## Course Context`
+- [ ] [mechanical] Session Types defined, each with slug, criterion, and required-elements checklist (see `data/session-types.md`)
+- [ ] [mechanical] Didactic Framework and Default Session Method declared (the latter may explicitly be `none`) — see `data/didactic-methods.md`
 
 ## Templates `[if template imports or template macros are used]`
 
-- [ ] `journal.md` → `## Templates` exists
-- [ ] Every template in `## Templates` has a matching `import:` line in the main metadata header
-- [ ] Every material using a template macro has the matching `import:` line in its own metadata header
-- [ ] Template usage examples and constraints are documented in `## Templates`
-- [ ] Community discovery link included: https://github.com/topics/liascript-template
+- [ ] [mechanical] `journal.md` → `## Templates` exists
+- [ ] [mechanical] Every template in `## Templates` has a matching `import:` line in the main metadata header
+- [ ] [mechanical] Every material using a template macro has the matching `import:` line in its own metadata header
+- [ ] [mechanical] Template usage examples and constraints are documented in `## Templates`
+- [ ] [mechanical] Community discovery link included: https://github.com/topics/liascript-template
 
 ## Agents
 
-- [ ] `journal.md` → `## Agents` exists
-- [ ] Coauthor role, if used, is stored directly under `## Agents` → `### Coauthor`; specialist customizations, if used, are stored only in their matching direct `### {Agent}` subsection
-- [ ] Learner personas, if used, are stored under `## Agents` → `### Learner Personas`
-- [ ] No legacy top-level `## Learner Personas` section remains
+- [ ] [mechanical] `journal.md` → `## Agents` exists
+- [ ] [mechanical] Coauthor role, if used, is stored directly under `## Agents` → `### Coauthor`; specialist customizations, if used, are stored only in their matching direct `### {Agent}` subsection
+- [ ] [mechanical] Learner personas, if used, are stored under `## Agents` → `### Learner Personas`
+- [ ] [mechanical] No legacy top-level `## Learner Personas` section remains
 
 ## Agenda `[if agenda flag = yes in journal.md → ## Course Context]`
 
-- [ ] All sessions have: title, duration, type, learning objective, summary
-- [ ] Session learning objectives align with `journal.md` → `## Outline` learning objectives
-- [ ] Materials file reference present per session
+- [ ] [mechanical] All sessions have: title, duration, type, learning objective, summary
+- [ ] [pedagogical] Session learning objectives align with `journal.md` → `## Outline` learning objectives
+- [ ] [mechanical] Materials file reference present per session
 
 ## Session Progress (`journal.md` → `## Sessions`)
 
-- [ ] `journal.md` → `## Sessions` exists `[not single-lesson]`
-- [ ] Overview table appears directly below `## Sessions`
-- [ ] All expected sessions have a row in the overview table
-- [ ] No session marked ✅ Skeleton without a matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
-- [ ] No session marked ✅ Material without its material document present (`materials/{number}-{slug}/README.md` in multi-file mode, or a matching `##` chapter in root `README.md` in single-file mode)
-- [ ] All sessions marked ✅ Done before publishing
+- [ ] [mechanical] `journal.md` → `## Sessions` exists `[not single-lesson]`
+- [ ] [mechanical] Overview table appears directly below `## Sessions`
+- [ ] [mechanical] All expected sessions have a row in the overview table
+- [ ] [mechanical] No session marked ✅ Skeleton without a matching `### {number}. {title}` subsection in `journal.md` → `## Sessions`
+- [ ] [mechanical] No session marked ✅ Material without its material document present (`materials/{number}-{slug}/README.md` in multi-file mode, or a matching `##` chapter in root `README.md` in single-file mode)
+- [ ] [mechanical] All sessions marked ✅ Done before publishing
 
 ## Session Subsections (`journal.md` → `## Sessions`)
 
-- [ ] Exist for all sessions
-- [ ] All mandatory fields present (heading/title, type, summary, content, activities, references)
-- [ ] Activities are numbered lists
-- [ ] References are numbered lists
+- [ ] [mechanical] Exist for all sessions
+- [ ] [mechanical] All mandatory fields present (heading/title, type, summary, content, activities, references)
+- [ ] [mechanical] Activities are numbered lists
+- [ ] [mechanical] References are numbered lists
 
 ## Session Materials
 
-- [ ] All skeletons promoted to materials
-- [ ] Outline with subchapters present
-- [ ] References included per section where claims are made
-- [ ] Didactic inputs from `journal.md` → `## Didactics` reflected (methods, learning phases)
-- [ ] Learning objectives from `journal.md` → `## Agenda` addressed in content
-- [ ] Each session's content satisfies its declared Session Type's `Erforderlich` checklist from `## Didactics` → `__Session Types:__`
+- [ ] [mechanical] All skeletons promoted to materials
+- [ ] [mechanical] Outline with subchapters present
+- [ ] [pedagogical] References included per section where claims are made
+- [ ] [pedagogical] Didactic inputs from `journal.md` → `## Didactics` reflected (methods, learning phases)
+- [ ] [pedagogical] Learning objectives from `journal.md` → `## Agenda` addressed in content
+- [ ] [mechanical] Each session's content satisfies its declared Session Type's `Erforderlich` checklist from `## Didactics` → `__Session Types:__`
+- [ ] [mechanical] Each session's content satisfies its declared Session Method's `Erforderlich` checklist from `data/didactic-methods.md`, independently of the Session Type check above `[if a session method is set — i.e. journal.md → ## Didactics → __Default Session Method:__ is not "none"]`
+- [ ] [mechanical] Estimated duration per `data/duration-heuristic.md` (reading time + activity time) is within 70%–150% of the declared duration in `journal.md` → `## Agenda` — a deviation is always advisory, never a fail by itself
 
 ## LiaScript Syntax (per material file)
 
-- [ ] Exactly one `#` heading per file (course title)
-- [ ] `###` and deeper headings only inside HTML blocks (`<div>`), lists, or blockquotes
-- [ ] All code blocks properly closed (triple backticks)
-- [ ] Animation counters (`--{{n}}--`, `{{n}}`) reset to 0 after each `##` heading
-- [ ] Quiz syntax correct: `[(X)]` single choice, `[[X]]` multiple choice, `[[answer]]` text
-- [ ] All media elements (`![]`, `?[]`, `!?[]`) have meaningful alt text
-- [ ] No unclosed HTML blocks (`<div>` without `</div>`)
-- [ ] Course header metadata present (author, version, language, narrator) `[lecture-series, self-paced, workshop]`
+- [ ] [mechanical] All checks in `tasks/validate-syntax.md` pass (see that task's report for the full rule set — not duplicated here)
 
 ## Overall Consistency
 
-- [ ] Terminology from `journal.md` → `## Course Context` used consistently throughout project memory and materials
-- [ ] Instructor persona tone consistent across all materials
-- [ ] Learning objectives from `journal.md` → `## Outline` traceable into `journal.md` → `## Agenda` and materials
-- [ ] Context ↔ Outline ↔ Didactics ↔ Agenda ↔ Sessions consistent
-- [ ] Numbering correct, no gaps
-- [ ] No sessions without materials
+- [ ] [mechanical] Terminology from `journal.md` → `## Course Context` used consistently throughout project memory and materials
+- [ ] [pedagogical] Instructor persona tone consistent across all materials
+- [ ] [pedagogical] Learning objectives from `journal.md` → `## Outline` traceable into `journal.md` → `## Agenda` and materials
+- [ ] [pedagogical] Context ↔ Outline ↔ Didactics ↔ Agenda ↔ Sessions consistent
+- [ ] [mechanical] Numbering correct, no gaps
+- [ ] [mechanical] No sessions without materials
 
 ==================== END: specs/checklists/course-quality-checklist.md ====================
+
+
+==================== START: specs/data/didactic-methods.md ====================
+
+# Didactic Methods
+
+> Read this before choosing, generating for, or validating a course's didactic approach. Referenced by `:create-didactics`, `:create-agenda`, `:create-session`, `:promote-session`, and `:validate-course`.
+
+Didactic concepts fall into three layers here, each handled differently — do not mix them up:
+
+1. **Course Frameworks** — course-wide, named once, documentation only. No task behavior changes based on which one is chosen.
+2. **Session Methods** — chosen per session (with a course-level default), each with its own checkable `Erforderlich` list. Enforced the same way Session Types are (see `data/session-types.md`).
+3. **Validation Mechanisms** — concepts that are already implemented by existing tasks. Named here only so the vocabulary is available; nothing new to build.
+
+## 1) Course Frameworks
+
+Set once in `journal.md` → `## Didactics` → `__Didactic Framework:__`. Pure documentation/vocabulary — the pipeline (`create-outline` → `create-didactics` → `create-agenda`) already follows these patterns structurally, so picking one doesn't change any task's steps.
+
+| Framework | What it means |
+|---|---|
+| **ADDIE** | Analyse → Design → Development → Implementation → Evaluation. Classic linear instructional-design model. |
+| **Backward Design** (Wiggins & McTighe) | Learning objectives first, then assessment, only then content/activities. |
+| **Constructive Alignment** (Biggs) | Learning objectives, teaching/learning activities, and assessment are deliberately aligned with each other. |
+
+### Default suggestion by course type
+
+| Course type | Suggested framework | Why |
+|---|---|---|
+| lecture-series | Backward Design | Objectives/assessment drive a multi-week structure best when fixed early. |
+| self-paced | ADDIE | Clear, iterable phases suit solitary, incremental development. |
+| workshop | Constructive Alignment | Activities are the core of a workshop — they must stay tightly bound to objectives. |
+| single-lesson | Backward Design | A compact lesson benefits from a tight objective → assessment → content chain. |
+
+As with Session Types, this is a starting suggestion, not a fixed default — the instructor confirms or changes it.
+
+## 2) Session Methods
+
+Chosen per session (course-level default set in `## Didactics` → `__Default Session Method:__`, per-session override possible in `:create-agenda`). Each method has the same four-part definition format as Session Types (see `data/session-types.md` → "Definition format"): display name, slug, one-line criterion, `Erforderlich` checklist — and is enforced by `:validate-course` the same way, as a **second, independent** checklist alongside the session's Type checklist. The two never merge and never conflict — a session simply has to satisfy both.
+
+`__Default Session Method:__` may also be set to **`none`** — an explicit opt-out. When set, no Session Method `Erforderlich` check runs anywhere in the course; nothing is blocked or degraded, it's simply not used.
+
+### Definitions
+
+```
+__Gagné's Nine Events__ (slug: `gagne`) — Sequenced instruction with a clear
+attention–activation–practice–feedback structure. Fits presenter-led sessions.
+  Erforderlich: opening attention hook present; prior knowledge explicitly
+  activated; practice with feedback present.
+
+__Cognitive Load Pacing__ (slug: `cognitive-load`) — Deliberate control of
+cognitive load: new concepts are dosed, complex material is scaffolded,
+redundant re-presentation is avoided.
+  Erforderlich: no more than ~3–5 new core concepts introduced in the session;
+  complex content broken into worked examples or sub-steps; no redundant
+  restatement of the same information across formats without added value.
+
+__UDL Format Variety__ (slug: `udl`) — Universal Design for Learning: content
+offered through multiple representation/expression formats so different
+learners can access and demonstrate understanding.
+  Erforderlich: at least two distinct media formats used for core concepts
+  (text + diagram/video/interaction); at least one way for learners to
+  demonstrate understanding beyond a single quiz format; basic accessibility
+  considered (alt text, plain language).
+```
+
+### Default suggestion by course type
+
+| Course type | Suggested default method | Why |
+|---|---|---|
+| lecture-series | Gagné's Nine Events (`gagne`) | Presenter-led sessions benefit from a clear sequence. |
+| self-paced | UDL Format Variety (`udl`) | No presenter in the room — multiple access paths matter more. |
+| workshop | Cognitive Load Pacing (`cognitive-load`) | High interactivity risks overload without deliberate pacing. |
+| single-lesson | Gagné's Nine Events (`gagne`) | A compact single arc benefits from a tight, clear structure. |
+
+As with Session Types, this is a starting suggestion the instructor confirms, edits, or opts out of (`none`) at `:create-didactics`, and can override per session at `:create-agenda`.
+
+## 3) Validation Mechanisms (already implemented — reference only)
+
+No new mechanism needed for any of these — this table exists so the vocabulary is available when discussing testing strategy with the instructor.
+
+| Concept | Already implemented in | What it covers |
+|---|---|---|
+| Kirkpatrick Level 1 (Reaction) | `tasks/review-as-persona.md` | Simulated learner's reaction to the material |
+| Kirkpatrick Level 2 (Learning) | `tasks/validate-course.md` (Content checks: learning objectives addressed) | Whether the objective is actually covered |
+| Formative evaluation | `tasks/validate-course.md` + `tasks/build-session.md` iteration loop | Ongoing check-and-fix during development |
+| Summative evaluation | `tasks/validate-course.md` → Publishing Gate | Final go/no-go decision before publishing |
+| Persona-based review | `tasks/review-as-persona.md` | Perspective-taking test through a simulated learner |
+
+## Enforcement loop (Session Methods only)
+
+Course Frameworks are documentation-only and Validation Mechanisms are already enforced elsewhere, so only Session Methods need their own loop — the same three-task loop Session Types already use:
+
+1. **Generation** — `:create-agenda` assigns the method per session (default pre-selected, instructor can override); `:create-session` stores it on the skeleton; `:promote-session` follows its structural guidance when generating content.
+2. **Validation** — `:validate-course` (session and course mode) checks the material against the method's `Erforderlich` list, independently of the Session Type check.
+3. **Course-level check** — `checklists/course-quality-checklist.md` confirms every session's content matches its declared method's required elements before publishing (when a method is set).
+
+If `__Default Session Method:__` is missing entirely (not even explicitly `none`), `:validate-course` flags this as a gap rather than silently skipping the check — same principle as an undefined Session Type.
+
+## Relationship to Session Types
+
+**Type** and **Method** are orthogonal properties of a session — do not confuse them:
+
+- **Type** (`data/session-types.md`) is the *format* a session takes — is this a lecture, an exercise, a self-check?
+- **Method** (this file) is the *didactic technique* used to structure and validate the content — how is it sequenced, paced, or made accessible?
+
+A session declares both: e.g. a session of Type `exercise` might use Method `cognitive-load`, while another `exercise` session in the same course uses `gagne` instead. Both checklists apply independently.
+
+==================== END: specs/data/didactic-methods.md ====================
+
+
+==================== START: specs/data/duration-heuristic.md ====================
+
+# Duration Heuristic
+
+> Read this before estimating or validating how long a session's material actually takes. Referenced by `:validate-course`, `:build-session`, `:create-agenda`, and `:coauthor-materials`.
+
+A common failure mode is a session that reads as "complete" but is too thin for its declared duration — or the reverse. Word count alone misses this: a single slide can carry 15 minutes of discussion, and a dense slide can be read in 30 seconds. This heuristic combines **reading time** with **activity time** so both cases are estimated correctly.
+
+## Formula
+
+**Estimated total duration = reading time (prose) + activity time**
+
+### Reading time
+
+Word count of the prose (excluding activity/discussion/quiz blocks, which are estimated separately below) ÷ reading pace.
+
+Reading pace depends on the course type from `journal.md` → `## Course Context`:
+- **130 words/minute** for narrated/lecture-style course types (content is meant to be read aloud or matches a TTS narration pace)
+- **200 words/minute** for self-paced, silent-reading course types
+
+### Activity time
+
+For each activity, discussion, exercise, or quiz block in the material:
+
+- **If the material states a duration explicitly** (e.g. "(15 Min)", "ca. 10 Minuten") — use that value.
+- **Otherwise, fall back to this rough table** (adjustable, not precise):
+
+| Activity type | Default estimate |
+|---|---|
+| Quiz question (single/multiple/text) | 1–2 min each |
+| Short discussion prompt | 8–10 min |
+| Group exercise / hands-on task | 15–20 min |
+| Video/demo embed | stated media length, or 5 min default |
+| Case study / longer discussion | 15–20 min |
+
+Sum reading time and activity time for the session's total estimate.
+
+## Comparing against the declared duration
+
+Compare the total estimate to the session's declared duration in `journal.md` → `## Agenda`.
+
+- **Flag** if the estimate falls outside **70%–150%** of the declared duration.
+- This is **always advisory, never a hard fail by itself** — final judgment stays with the instructor, or with a persona review if one is available (see `tasks/review-as-persona.md`; a persona's "this feels too short/rushed" comment is a stronger signal than the formula alone).
+
+## Where this is used
+
+- `tasks/validate-course.md` — Content checks (session and course mode): computes the estimate and records the flag, if any.
+- `checklists/course-quality-checklist.md` — the "Session Materials" duration checkbox references this file instead of restating the formula.
+- `tasks/build-session.md` — content loop uses this during its mechanical gate.
+- `tasks/create-agenda.md` — optional pointer when the instructor first declares session durations, as a sanity check.
+- `tasks/coauthor-materials.md` — optional self-check while drafting, before formal validation.
+
+==================== END: specs/data/duration-heuristic.md ====================
 
 
 ==================== START: specs/data/file-structure-modes.md ====================
@@ -6415,6 +6796,8 @@ collection:
 A session's `type` is **not** a fixed global enum (`lecture` / `exercise`). It is a per-course vocabulary, defined once in `journal.md` → `## Didactics` → `__Session Types:__` by `:create-didactics`, and referenced by slug everywhere else.
 
 This is a different layer than `journal.md` → `## Course Context` → `__Terminology:__` (`sessions-called`, `lectures-called`): Terminology names the *unit* (e.g. "what do we call one session — a lesson, a block?"). Session Types names the *format that unit takes* (e.g. "is this particular lesson a lecture, an exercise, a self-check?"). A course can have one `sessions-called` term and several Session Types.
+
+It is also a different, orthogonal layer from **Session Methods** (`data/didactic-methods.md`): Type is the *format* a session takes, Method is the *didactic technique* used to structure and validate its content (e.g. Gagné's Nine Events, Cognitive Load Pacing). A session declares both independently — don't confuse a `**Type:**` line with a `**Method:**` line on the same skeleton.
 
 ## Definition format
 
