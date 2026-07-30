@@ -17,6 +17,19 @@ persona:
     Raises concerns when content is vague, learning objectives are missing, or decisions seem inconsistent.
     Does not simply validate — acts as a critical sparring partner.
   focus: "Structured course development, didactics, material planning, interactive support"
+  iteration_pattern: >
+    Some tasks describe a bounded "repeat until condition" loop directly in their own steps,
+    so they work the same regardless of which agent executes them — Claude Code, another
+    coding agent (Codex, Gemini CLI, ChatGPT), or an instructor manually re-invoking the
+    command. A block of the form "**Loop:** Repeat steps X–Y until `<condition>` holds, or
+    after `<N>` iterations — whichever comes first. On hitting the cap without meeting the
+    condition: stop and report the remaining points to the instructor instead of continuing."
+    must be followed literally: check the condition against currently visible state (usually
+    a `journal.md` section), do the steps, recheck. Never keep looping silently past the
+    stated cap — escalate to the instructor instead. Under Claude Code, such a loop can
+    additionally be automated with `/goal "<condition>, or stop after <N> iterations"` — that's
+    a convenience, not a requirement; the task file's own instructions must remain sufficient
+    on their own.
   core_principles:
     - "Always ask if information is missing"
     - "Suggest options when decisions are open"
@@ -64,6 +77,9 @@ agent_coordination:
     - "Session count grows significantly beyond what was scoped in :init-course → suggest reviewing course type or splitting the course"
     - "A :quick-fix grows into multi-section rework → escalate to :coauthor-materials for the full session"
     - "Instructor changes a core concept mid-development (target audience, difficulty, course type) → flag consistency risk and suggest running :validate-course before continuing"
+
+  cross_agent_exceptions:
+    - "`:build-session` is the one task allowed to run the Learner-Agent's (`review-as-persona`) and Artist-Agent's (`create-image`, `generate-image`) own procedures automatically as sub-steps of its loop, instead of only suggesting the handoff. Each sub-step still only reads its owning agent's own `### {Agent}` subsection in `journal.md` → `## Agents` — the read-scope rule stays in force even though the switch happens automatically."
 
 interaction_mode:
   principle: "Use structured questions (vscode_askQuestions) for closed decisions; use free-form dialog for open content."
@@ -206,6 +222,8 @@ commands:
   :update-dashboard: "run task `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` — regenerate the derived `journal.md` → `## Dashboard` after project state changes"
   :create-session {number} {type} {title?}: "run task `tasks/create-session-skeleton.md` with `templates/session-skeleton.yaml`"
   :promote-session {number} {type}: "run task `tasks/promote-session.md` with `templates/session-material.yaml`"
+  :validate-syntax {number} {type}: "run task `tasks/validate-syntax.md` — full LiaScript syntax check for one session; also called internally by validate-course, quick-fix, build-session"
+  :build-session {number} {type}: "run task `tasks/build-session.md` — orchestrates promote-session → validate-course → persona review → Artist-Agent images as one bounded loop per session"
   :coauthor-materials: "run task `tasks/coauthor-materials.md`"
   :quick-fix {number} {type} {description}: "run task `tasks/quick-fix.md` — targeted single-issue correction without full co-authoring session"
   :validate-course: "run task `tasks/validate-course.md` with `checklists/course-quality-checklist.md` — no args: full course check before publishing and replace validation reports inside all session subsections; with {number} {type}: session-level syntax + content check after coauthor"
@@ -234,6 +252,8 @@ dependencies:
     - update-dashboard.md
     - create-session-skeleton.md
     - promote-session.md
+    - validate-syntax.md
+    - build-session.md
     - coauthor-materials.md
     - quick-fix.md
     - validate-course.md

@@ -71,6 +71,19 @@ persona:
     Raises concerns when content is vague, learning objectives are missing, or decisions seem inconsistent.
     Does not simply validate — acts as a critical sparring partner.
   focus: "Structured course development, didactics, material planning, interactive support"
+  iteration_pattern: >
+    Some tasks describe a bounded "repeat until condition" loop directly in their own steps,
+    so they work the same regardless of which agent executes them — Claude Code, another
+    coding agent (Codex, Gemini CLI, ChatGPT), or an instructor manually re-invoking the
+    command. A block of the form "**Loop:** Repeat steps X–Y until `<condition>` holds, or
+    after `<N>` iterations — whichever comes first. On hitting the cap without meeting the
+    condition: stop and report the remaining points to the instructor instead of continuing."
+    must be followed literally: check the condition against currently visible state (usually
+    a `journal.md` section), do the steps, recheck. Never keep looping silently past the
+    stated cap — escalate to the instructor instead. Under Claude Code, such a loop can
+    additionally be automated with `/goal "<condition>, or stop after <N> iterations"` — that's
+    a convenience, not a requirement; the task file's own instructions must remain sufficient
+    on their own.
   core_principles:
     - "Always ask if information is missing"
     - "Suggest options when decisions are open"
@@ -118,6 +131,9 @@ agent_coordination:
     - "Session count grows significantly beyond what was scoped in :init-course → suggest reviewing course type or splitting the course"
     - "A :quick-fix grows into multi-section rework → escalate to :coauthor-materials for the full session"
     - "Instructor changes a core concept mid-development (target audience, difficulty, course type) → flag consistency risk and suggest running :validate-course before continuing"
+
+  cross_agent_exceptions:
+    - "`:build-session` is the one task allowed to run the Learner-Agent's (`review-as-persona`) and Artist-Agent's (`create-image`, `generate-image`) own procedures automatically as sub-steps of its loop, instead of only suggesting the handoff. Each sub-step still only reads its owning agent's own `### {Agent}` subsection in `journal.md` → `## Agents` — the read-scope rule stays in force even though the switch happens automatically."
 
 interaction_mode:
   principle: "Use structured questions (vscode_askQuestions) for closed decisions; use free-form dialog for open content."
@@ -260,6 +276,8 @@ commands:
   :update-dashboard: "run task `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` — regenerate the derived `journal.md` → `## Dashboard` after project state changes"
   :create-session {number} {type} {title?}: "run task `tasks/create-session-skeleton.md` with `templates/session-skeleton.yaml`"
   :promote-session {number} {type}: "run task `tasks/promote-session.md` with `templates/session-material.yaml`"
+  :validate-syntax {number} {type}: "run task `tasks/validate-syntax.md` — full LiaScript syntax check for one session; also called internally by validate-course, quick-fix, build-session"
+  :build-session {number} {type}: "run task `tasks/build-session.md` — orchestrates promote-session → validate-course → persona review → Artist-Agent images as one bounded loop per session"
   :coauthor-materials: "run task `tasks/coauthor-materials.md`"
   :quick-fix {number} {type} {description}: "run task `tasks/quick-fix.md` — targeted single-issue correction without full co-authoring session"
   :validate-course: "run task `tasks/validate-course.md` with `checklists/course-quality-checklist.md` — no args: full course check before publishing and replace validation reports inside all session subsections; with {number} {type}: session-level syntax + content check after coauthor"
@@ -288,6 +306,8 @@ dependencies:
     - update-dashboard.md
     - create-session-skeleton.md
     - promote-session.md
+    - validate-syntax.md
+    - build-session.md
     - coauthor-materials.md
     - quick-fix.md
     - validate-course.md
@@ -1436,7 +1456,7 @@ and serve as the basis for `:review-as-persona` feedback sessions.
 12. On approval: save to `journal.md` → `## Agents` → `### Learner Personas`.
     - If `## Agents` does not exist: create it from `templates/agents.yaml`
     - If `### Learner Personas` does not exist inside `## Agents`: create that subsection
-    - Append as a new `#### Persona: {icon} {name}` subsection
+    - Append as a new `#### Persona: {icon} {name}` subsection, wrapped in `<section>…</section>` per the **Persona Structure** template below
 13. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
 14. Suggest next step:
     > "Persona saved. Call `:review-as-persona [Name] [number] [type]` to use [Icon] [Name] as a reviewer for a session."
@@ -1445,10 +1465,12 @@ and serve as the basis for `:review-as-persona` feedback sessions.
 
 ## Persona Structure
 
-Each persona is one `####` subsection inside `journal.md` → `## Agents` → `### Learner Personas` — never use `##` or `###` inside a persona entry (they would terminate the target container) and never go deeper than `#####`:
+Each persona is one `####` subsection inside `journal.md` → `## Agents` → `### Learner Personas` — never use `##` or `###` inside a persona entry (they would terminate the target container) and never go deeper than `#####`. Wrap the whole entry in `<section>…</section>` (same technique as `#### Images` in `tasks/create-image.md`), so LiaScript shows the persona as one slide instead of splitting on every `#####` subheading — see `data/liascript-cheat-sheet.md` → "Additional Rule: Subheadings within a Slide":
 
 ```markdown
 #### Persona: [Icon] [Name]
+
+<section>
 
 *Created: YYYY-MM-DD | Mode: quick / data-driven*
 
@@ -1521,6 +1543,8 @@ Includes: age, background, where they are in their training, attitude toward lea
 - [e.g., "Use short video clips and interactive elements — YouTube-native audience"]
 - [e.g., "Relate examples to concrete work situations in the trade"]
 - [e.g., "Keep quiz questions simple and binary — no complex multi-part answers"]
+
+</section>
 ```
 
 ## Usage
@@ -2512,7 +2536,8 @@ Rules:
 - Store the report under the matching `### {number}. {title}` session subsection.
 - The container heading is always `#### Persona Reviews`.
 - Each persona report is headed `##### {icon} {name}`.
-- If that persona already has a report for the same session, replace it completely.
+- Wrap each `##### {icon} {name}` report in its own `<section>…</section>` block (same technique as `#### Images` in `tasks/create-image.md`), so LiaScript shows it as one slide instead of splitting on every `######` subheading — see `data/liascript-cheat-sheet.md` → "Additional Rule: Subheadings within a Slide".
+- If that persona already has a report for the same session, replace it completely (including its `<section>` wrapper).
 - Do not use a global `journal.md` → `## Persona Reviews` section for new reviews.
 
 ## Steps
@@ -2564,9 +2589,11 @@ Rules:
    - Are any prerequisite concepts missing that would make the material incomprehensible?
    - Cross-check explicitly against Section 7 (Prior Knowledge Gaps) of the persona.
 
-6. Generate the structured review report:
+6. Generate the structured review report, wrapped in `<section>…</section>` (see Review Storage rules above):
 
    ```
+   <section>
+
    ##### [Icon] [Name]
 
    __Date:__ YYYY-MM-DD
@@ -2607,9 +2634,11 @@ Rules:
 
    ###### What Worked Well
    [What this persona would respond well to — do not skip this section.]
+
+   </section>
    ```
 
-7. Create or update `#### Persona Reviews` inside the matching session subsection in `journal.md` → `## Sessions`.
+7. Create or update `#### Persona Reviews` inside the matching session subsection in `journal.md` → `## Sessions`, keeping each persona's report wrapped in its own `<section>…</section>` block.
    - If `#### Persona Reviews` does not exist in that session, create it after `#### Validation Report` if present; otherwise place it near the end of the session subsection.
    - If `##### {icon} {name}` already exists under that session's `#### Persona Reviews`, replace only that persona's report.
    - If other persona reports exist for the same session, keep them unchanged.
@@ -3143,6 +3172,7 @@ Each session has at most one current validation report, rendered from `templates
 Rules:
 - Store the report under the matching `### {number}. {title}` session subsection.
 - The report heading is always `#### Validation Report`.
+- Wrap the entire rendered report in a single `<section>…</section>` block (same technique as `#### Images` in `tasks/create-image.md`), so LiaScript shows it as one slide instead of splitting on every `#####`/`######` subheading — see `data/liascript-cheat-sheet.md` → "Additional Rule: Subheadings within a Slide".
 - If the session already has a `#### Validation Report`, replace it completely.
 - Do not keep historical session validation reports.
 - Session mode does not update `journal.md` → `## Validation`.
@@ -3192,7 +3222,7 @@ Rules:
    - Template findings, if applicable
    - Recommended actions
    - Line references where possible
-6. Create or replace the rendered `#### Validation Report` in the matching session subsection under `journal.md` → `## Sessions`.
+6. Create or replace the rendered `#### Validation Report`, wrapped in `<section>…</section>` (see Validation Storage rules above), in the matching session subsection under `journal.md` → `## Sessions`.
    Then run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
 7. If no issues found: confirm "Session {number} ({type}) — ✅ Syntax and content verified. Report saved in `journal.md` → `## Sessions` → `### {number}. {title}` → `#### Validation Report`."
 8. If issues found: confirm the report was saved, list the blockers briefly, and ask the instructor whether to open `:coauthor-materials` to fix them.
@@ -3231,7 +3261,7 @@ Rules:
    - All sessions marked ✅ Done `[required before publishing]`
 
 7. **Check each material document** (same LiaScript + content checks as Session Mode Step 4).
-   For each material file, fill `templates/session-validation.yaml` with `Mode: course` and create or replace the matching `#### Validation Report` in that session subsection under `journal.md` → `## Sessions`.
+   For each material file, fill `templates/session-validation.yaml` with `Mode: course` and create or replace the matching `#### Validation Report`, wrapped in `<section>…</section>` (see Validation Storage rules above), in that session subsection under `journal.md` → `## Sessions`.
 
 8. **Consistency check across project memory and materials:**
    - Terminology consistent (sessions-called from `journal.md` → `## Course Context` used throughout)

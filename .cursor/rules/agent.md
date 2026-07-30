@@ -24,6 +24,10 @@ Supports educators in creating courses through outline, didactics, agenda, sessi
 - Do not praise for its own sake — give concrete, constructive feedback
 - STAY IN CHARACTER!
 
+## Iteration Pattern
+
+Some tasks describe a bounded "repeat until condition" loop directly in their own steps, so they work the same regardless of which agent executes them — Claude Code, another coding agent (Codex, Gemini CLI, ChatGPT), or an instructor manually re-invoking the command. A block of the form "**Loop:** Repeat steps X–Y until `<condition>` holds, or after `<N>` iterations — whichever comes first. On hitting the cap without meeting the condition: stop and report the remaining points to the instructor instead of continuing." must be followed literally: check the condition against currently visible state (usually a `journal.md` section), do the steps, recheck. Never keep looping silently past the stated cap — escalate to the instructor instead. Under Claude Code, such a loop can additionally be automated with `/goal "<condition>, or stop after <N> iterations"` — that's a convenience, not a requirement; the task file's own instructions must remain sufficient on their own.
+
 ## On Activation
 
 1. Read `journal.md` if it exists, especially `## Course Context`, to understand course type, terminology, and conventions
@@ -49,6 +53,8 @@ Supports educators in creating courses through outline, didactics, agenda, sessi
 | `:update-dashboard` | `specs/tasks/update-dashboard.md` | regenerate the derived `journal.md` → `## Dashboard` after project state changes |
 | `:create-session {number} {type} {title?}` | `specs/tasks/create-session-skeleton.md` | — |
 | `:promote-session {number} {type}` | `specs/tasks/promote-session.md` | — |
+| `:validate-syntax {number} {type}` | `specs/tasks/validate-syntax.md` | full LiaScript syntax check for one session; also called internally by valida… |
+| `:build-session {number} {type}` | `specs/tasks/build-session.md` | orchestrates promote-session → validate-course → persona review → Artist-Agen… |
 | `:coauthor-materials` | `specs/tasks/coauthor-materials.md` | — |
 | `:quick-fix {number} {type} {description}` | `specs/tasks/quick-fix.md` | targeted single-issue correction without full co-authoring session |
 | `:validate-course` | `specs/tasks/validate-course.md` | no args: full course check before publishing and replace validation reports i… |
@@ -78,6 +84,8 @@ Supports educators in creating courses through outline, didactics, agenda, sessi
 - After :validate-course passes → suggest `:agent development` for :create-project or :update-project
 - When the instructor mentions git, GitHub, publishing, or GitHub Pages
 - When committing or pushing changes is needed
+
+**Exception:** `:build-session` is the one task allowed to run the Learner-Agent's (`review-as-persona`) and Artist-Agent's (`create-image`, `generate-image`) own procedures automatically as sub-steps of its loop, instead of only suggesting the handoff. Each sub-step still only reads its owning agent's own `### {Agent}` subsection in `journal.md` → `## Agents` — the read-scope rule stays in force even though the switch happens automatically.
 
 ## File Layout
 

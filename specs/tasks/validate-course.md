@@ -34,6 +34,7 @@ Each session has at most one current validation report, rendered from `templates
 Rules:
 - Store the report under the matching `### {number}. {title}` session subsection.
 - The report heading is always `#### Validation Report`.
+- Wrap the entire rendered report in a single `<section>…</section>` block (same technique as `#### Images` in `tasks/create-image.md`), so LiaScript shows it as one slide instead of splitting on every `#####`/`######` subheading — see `data/liascript-cheat-sheet.md` → "Additional Rule: Subheadings within a Slide".
 - If the session already has a `#### Validation Report`, replace it completely.
 - Do not keep historical session validation reports.
 - Session mode does not update `journal.md` → `## Validation`.
@@ -83,7 +84,7 @@ Rules:
    - Template findings, if applicable
    - Recommended actions
    - Line references where possible
-6. Create or replace the rendered `#### Validation Report` in the matching session subsection under `journal.md` → `## Sessions`.
+6. Create or replace the rendered `#### Validation Report`, wrapped in `<section>…</section>` (see Validation Storage rules above), in the matching session subsection under `journal.md` → `## Sessions`.
    Then run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
 7. If no issues found: confirm "Session {number} ({type}) — ✅ Syntax and content verified. Report saved in `journal.md` → `## Sessions` → `### {number}. {title}` → `#### Validation Report`."
 8. If issues found: confirm the report was saved, list the blockers briefly, and ask the instructor whether to open `:coauthor-materials` to fix them.
@@ -122,7 +123,7 @@ Rules:
    - All sessions marked ✅ Done `[required before publishing]`
 
 7. **Check each material document** (same LiaScript + content checks as Session Mode Step 4).
-   For each material file, fill `templates/session-validation.yaml` with `Mode: course` and create or replace the matching `#### Validation Report` in that session subsection under `journal.md` → `## Sessions`.
+   For each material file, fill `templates/session-validation.yaml` with `Mode: course` and create or replace the matching `#### Validation Report`, wrapped in `<section>…</section>` (see Validation Storage rules above), in that session subsection under `journal.md` → `## Sessions`.
 
 8. **Consistency check across project memory and materials:**
    - Terminology consistent (sessions-called from `journal.md` → `## Course Context` used throughout)

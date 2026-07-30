@@ -37,7 +37,8 @@ Rules:
 - Store the report under the matching `### {number}. {title}` session subsection.
 - The container heading is always `#### Persona Reviews`.
 - Each persona report is headed `##### {icon} {name}`.
-- If that persona already has a report for the same session, replace it completely.
+- Wrap each `##### {icon} {name}` report in its own `<section>…</section>` block (same technique as `#### Images` in `tasks/create-image.md`), so LiaScript shows it as one slide instead of splitting on every `######` subheading — see `data/liascript-cheat-sheet.md` → "Additional Rule: Subheadings within a Slide".
+- If that persona already has a report for the same session, replace it completely (including its `<section>` wrapper).
 - Do not use a global `journal.md` → `## Persona Reviews` section for new reviews.
 
 ## Steps
@@ -89,9 +90,11 @@ Rules:
    - Are any prerequisite concepts missing that would make the material incomprehensible?
    - Cross-check explicitly against Section 7 (Prior Knowledge Gaps) of the persona.
 
-6. Generate the structured review report:
+6. Generate the structured review report, wrapped in `<section>…</section>` (see Review Storage rules above):
 
    ```
+   <section>
+
    ##### [Icon] [Name]
 
    __Date:__ YYYY-MM-DD
@@ -132,9 +135,11 @@ Rules:
 
    ###### What Worked Well
    [What this persona would respond well to — do not skip this section.]
+
+   </section>
    ```
 
-7. Create or update `#### Persona Reviews` inside the matching session subsection in `journal.md` → `## Sessions`.
+7. Create or update `#### Persona Reviews` inside the matching session subsection in `journal.md` → `## Sessions`, keeping each persona's report wrapped in its own `<section>…</section>` block.
    - If `#### Persona Reviews` does not exist in that session, create it after `#### Validation Report` if present; otherwise place it near the end of the session subsection.
    - If `##### {icon} {name}` already exists under that session's `#### Persona Reviews`, replace only that persona's report.
    - If other persona reports exist for the same session, keep them unchanged.

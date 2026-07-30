@@ -83,7 +83,7 @@ and serve as the basis for `:review-as-persona` feedback sessions.
 12. On approval: save to `journal.md` → `## Agents` → `### Learner Personas`.
     - If `## Agents` does not exist: create it from `templates/agents.yaml`
     - If `### Learner Personas` does not exist inside `## Agents`: create that subsection
-    - Append as a new `#### Persona: {icon} {name}` subsection
+    - Append as a new `#### Persona: {icon} {name}` subsection, wrapped in `<section>…</section>` per the **Persona Structure** template below
 13. Run `tasks/update-dashboard.md` with `templates/project-dashboard.yaml` to update `journal.md` → `## Dashboard` in place.
 14. Suggest next step:
     > "Persona saved. Call `:review-as-persona [Name] [number] [type]` to use [Icon] [Name] as a reviewer for a session."
@@ -92,10 +92,12 @@ and serve as the basis for `:review-as-persona` feedback sessions.
 
 ## Persona Structure
 
-Each persona is one `####` subsection inside `journal.md` → `## Agents` → `### Learner Personas` — never use `##` or `###` inside a persona entry (they would terminate the target container) and never go deeper than `#####`:
+Each persona is one `####` subsection inside `journal.md` → `## Agents` → `### Learner Personas` — never use `##` or `###` inside a persona entry (they would terminate the target container) and never go deeper than `#####`. Wrap the whole entry in `<section>…</section>` (same technique as `#### Images` in `tasks/create-image.md`), so LiaScript shows the persona as one slide instead of splitting on every `#####` subheading — see `data/liascript-cheat-sheet.md` → "Additional Rule: Subheadings within a Slide":
 
 ```markdown
 #### Persona: [Icon] [Name]
+
+<section>
 
 *Created: YYYY-MM-DD | Mode: quick / data-driven*
 
@@ -168,6 +170,8 @@ Includes: age, background, where they are in their training, attitude toward lea
 - [e.g., "Use short video clips and interactive elements — YouTube-native audience"]
 - [e.g., "Relate examples to concrete work situations in the trade"]
 - [e.g., "Keep quiz questions simple and binary — no complex multi-part answers"]
+
+</section>
 ```
 
 ## Usage

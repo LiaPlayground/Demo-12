@@ -196,6 +196,11 @@ def _nav_content(target_key: str, target: dict, agent: dict) -> str:
             lines.append(f"- {p}")
         lines.append("")
 
+    # Iteration pattern
+    iteration_pattern = (persona.get("iteration_pattern") or "").strip()
+    if iteration_pattern:
+        lines += ["## Iteration Pattern", "", iteration_pattern, ""]
+
     # On activation
     on_activation = coord.get("on_activation") or []
     if on_activation:
@@ -235,6 +240,15 @@ def _nav_content(target_key: str, target: dict, agent: dict) -> str:
                 for s in items:
                     lines.append(f"- {s}")
                 lines.append("")
+
+    # Cross-agent exceptions
+    cross_agent_exceptions = coord.get("cross_agent_exceptions") or []
+    if cross_agent_exceptions:
+        if "## Agent Coordination" not in lines:
+            lines += ["## Agent Coordination", ""]
+        for note in cross_agent_exceptions:
+            lines.append(f"**Exception:** {note}")
+            lines.append("")
 
     # File layout
     lines += [
