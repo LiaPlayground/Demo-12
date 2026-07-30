@@ -55,7 +55,7 @@ TARGETS = {
         "tool_note": "Claude Code reads files directly with its Read tool. When a command is invoked, **read the task file first**, then execute it.",
     },
     "codex": {
-        "path": "../.codex/AGENTS.md",
+        "path": "../AGENTS.md",
         "mode": "navigation",
         "label": "OpenAI Codex CLI",
         "tool_note": "Codex CLI has filesystem access. When a command is invoked, **read the task file first**, then execute it.",
