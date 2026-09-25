@@ -42,21 +42,27 @@ jobs:
       - name: Prepare output directory
         run: mkdir -p "$OUT_DIR"
 
+      # --scorm-embed bundles the Markdown into course.js instead of fetching
+      # ./README.md at runtime. Without it, LMSs that do not serve .md files
+      # (Moodle 4, OPAL, Open edX, ...) show "Bad Status 404 ./README.md".
+      # For ILIAS / OpenOLAT / scorm.cloud use --scorm-iframe instead.
       - name: Export SCORM 1.2
-        # scorm1.2 stores only the location; add --scorm-embed for Moodle 4 / OPAL / Open edX
+        # scorm1.2 stores only the location, not quiz state
         run: >
           liaex -i "$COURSE" --format scorm1.2
           --output "$OUT_DIR/once-only-scorm1.2"
           --scorm-organization "LiaPlayground"
           --scorm-masteryScore 80
+          --scorm-embed
 
       - name: Export SCORM 2004
-        # scorm2004 persists quiz/survey state; add --scorm-iframe for ILIAS / OpenOLAT
+        # scorm2004 persists quiz/survey state
         run: >
           liaex -i "$COURSE" --format scorm2004
           --output "$OUT_DIR/once-only-scorm2004"
           --scorm-organization "LiaPlayground"
           --scorm-masteryScore 80
+          --scorm-embed
 
       - name: Export xAPI
         # Self-contained package with tincan.xml; the LRS endpoint is configured in the LMS
