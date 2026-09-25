@@ -1,0 +1,94 @@
+# Export the LiaScript course to SCORM 1.2, SCORM 2004 and xAPI on every push
+# to main, publish the packages together with a project index page on the
+# gh-pages branch, and keep the zips as workflow artifacts.
+#
+# One-time setup after the first run: Settings -> Pages -> Source: branch gh-pages
+# (see specs/data/liascript-workflows.md, section 7).
+
+name: Export LiaScript Course (SCORM + xAPI)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "materials/**"
+      - "project.yaml"
+      - ".github/workflows/export.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    env:
+      COURSE: materials/01-once-only-prinzip/README.md
+      OUT_DIR: public
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install LiaScript Exporter
+        run: npm install -g @liascript/exporter
+
+      - name: Prepare output directory
+        run: mkdir -p "$OUT_DIR"
+
+      - name: Export SCORM 1.2
+        # scorm1.2 stores only the location; add --scorm-embed for Moodle 4 / OPAL / Open edX
+        run: >
+          liaex -i "$COURSE" --format scorm1.2
+          --output "$OUT_DIR/once-only-scorm1.2"
+          --scorm-organization "LiaPlayground"
+          --scorm-masteryScore 80
+
+      - name: Export SCORM 2004
+        # scorm2004 persists quiz/survey state; add --scorm-iframe for ILIAS / OpenOLAT
+        run: >
+          liaex -i "$COURSE" --format scorm2004
+          --output "$OUT_DIR/once-only-scorm2004"
+          --scorm-organization "LiaPlayground"
+          --scorm-masteryScore 80
+
+      - name: Export xAPI
+        # Self-contained package with tincan.xml; the LRS endpoint is configured in the LMS
+        run: >
+          liaex -i "$COURSE" --format xapi
+          --output "$OUT_DIR/once-only-xapi"
+          --xapi-zip
+
+      - name: Generate project index page
+        run: |
+          liaex -i project.yaml --format project --output index
+          mv index.html "$OUT_DIR/index.html"
+
+      - name: List generated files
+        run: ls -la "$OUT_DIR"
+
+      - name: Upload packages as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: liascript-exports
+          path: ${{ env.OUT_DIR }}/*.zip
+          if-no-files-found: error
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ${{ env.OUT_DIR }}
+          force_orphan: true
+          commit_message: "Deploy: ${{ github.event.head_commit.message }}"
+
+      - name: Output website URL
+        run: |
+          echo "Deployed to: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
