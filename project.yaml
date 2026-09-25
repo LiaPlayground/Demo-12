@@ -52,6 +52,7 @@ collection:
 
   - url: https://raw.githubusercontent.com/LiaPlayground/Demo-12/main/materials/01-once-only-prinzip/README.md
     title: "Modul 1: Grundlagen des Once-Only-Prinzips und Registermodernisierung"
+    logo: https://raw.githubusercontent.com/LiaPlayground/Demo-12/main/materials/01-once-only-prinzip/assets/images/cover-kf02.jpg
     comment: >
       Drei Lektionen (ca. 30–40 Minuten): Das Once-Only-Prinzip und seine Voraussetzungen,
       Registermodernisierung und föderale Datenaustauschwege, Anforderungen an die eigene
@@ -62,10 +63,16 @@ collection:
 
   - html: >
       <hr>
-      <h2 id="downloads">LMS-Pakete</h2>
-      <p>Die Pakete werden bei jedem Push automatisch neu erzeugt (GitHub Actions).</p>
+      <h2 id="downloads">Downloads</h2>
+      <p>Alle Dateien werden bei jedem Push automatisch neu erzeugt (GitHub Actions).</p>
+      <h3>LMS-Pakete</h3>
       <ul>
         <li><a href="once-only-scorm1.2.zip">SCORM 1.2</a> – Moodle 3.x, OPAL, Open edX (speichert nur die Position)</li>
         <li><a href="once-only-scorm2004.zip">SCORM 2004</a> – ILIAS, OpenOLAT, Moodle 4.x (speichert Quiz-Zustände)</li>
         <li><a href="once-only-xapi.zip">xAPI / TinCan</a> – LRS-fähige Systeme, Endpoint wird im LMS konfiguriert</li>
+      </ul>
+      <h3>Dokumente</h3>
+      <ul>
+        <li><a href="once-only.pdf">PDF</a> – druckbare Fassung (A4, ohne Interaktion)</li>
+        <li><a href="once-only.epub">ePub</a> – für E-Reader und Tablets</li>
       </ul>

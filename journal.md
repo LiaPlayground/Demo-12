@@ -111,7 +111,7 @@ __Last updated:__ 2026-09-25
 | Materials | <span class="dashboard-status dashboard-status-current">1 / 1 converted</span> |
 | Course validation | <span class="dashboard-status dashboard-status-blocked">not run</span> |
 | Persona reviews | <span class="dashboard-status dashboard-status-current">optional</span> |
-| Publishing | <span class="dashboard-status dashboard-status-current">workflow + project.yaml ready, push to LiaPlayground/Demo-12 pending</span> |
+| Publishing | <span class="dashboard-status dashboard-status-current">pushed to LiaPlayground/Demo-12 (public); export workflow: SCORM 1.2/2004, xAPI, PDF, ePub; Pages source `gh-pages` to be enabled</span> |
 
 </div>
 

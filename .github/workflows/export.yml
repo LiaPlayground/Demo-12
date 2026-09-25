@@ -65,10 +65,54 @@ jobs:
           --output "$OUT_DIR/once-only-xapi"
           --xapi-zip
 
-      - name: Generate project index page
+      - name: Install Chromium system dependencies (required for PDF and ePub)
         run: |
-          liaex -i project.yaml --format project --output index
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgbm-dev libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libpango-1.0-0 libcairo2 libasound2t64 libnss3 libnspr4 \
+            fonts-liberation ca-certificates wget
+
+      - name: Export PDF
+        env:
+          PUPPETEER_ARGS: "--no-sandbox --disable-setuid-sandbox"
+        run: >
+          liaex -i "$COURSE" --format pdf
+          --output "$OUT_DIR/once-only"
+          --pdf-timeout 60000
+
+      - name: Export ePub
+        # --epub-cover is passed explicitly: the exporter resolves the relative
+        # header logo against the working directory, not the course folder
+        env:
+          PUPPETEER_ARGS: "--no-sandbox --disable-setuid-sandbox"
+        run: >
+          liaex -i "$COURSE" --format epub
+          --output "$OUT_DIR/once-only"
+          --epub-title "Grundlagen des Once-Only-Prinzips und Registermodernisierung"
+          --epub-author "GovTech Enablement"
+          --epub-language de
+          --epub-toc-title "Inhalt"
+          --epub-cover materials/01-once-only-prinzip/assets/images/cover-kf02.jpg
+          --epub-timeout 60000
+
+      - name: Generate project index page
+        # The project exporter only accepts http(s) URLs and raw.githubusercontent.com
+        # returns 404 for private repos (and can lag right after a push). So the index
+        # is built against a local static server on the checkout, and the links are
+        # rewritten back to the public raw URLs afterwards.
+        env:
+          RAW_BASE: https://raw.githubusercontent.com/LiaPlayground/Demo-12/main/
+          LOCAL_BASE: http://127.0.0.1:8000/
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 --directory "$GITHUB_WORKSPACE" >/dev/null 2>&1 &
+          sleep 2
+          sed "s#$RAW_BASE#$LOCAL_BASE#g" project.yaml > project.local.yaml
+          liaex -i project.local.yaml --format project --output index
+          sed -i "s#$LOCAL_BASE#$RAW_BASE#g" index.html
           mv index.html "$OUT_DIR/index.html"
+          rm -f project.local.yaml
 
       - name: List generated files
         run: ls -la "$OUT_DIR"
@@ -77,7 +121,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: liascript-exports
-          path: ${{ env.OUT_DIR }}/*.zip
+          path: |
+            ${{ env.OUT_DIR }}/*.zip
+            ${{ env.OUT_DIR }}/*.pdf
+            ${{ env.OUT_DIR }}/*.epub
           if-no-files-found: error
 
       - name: Deploy to GitHub Pages
